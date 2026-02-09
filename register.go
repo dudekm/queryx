@@ -3,8 +3,12 @@ package queryx
 import (
 	"github.com/dudekm/queryx/internal/protocol/cfxre"
 	"github.com/dudekm/queryx/internal/protocol/gamespy"
+	"github.com/dudekm/queryx/internal/protocol/hytale"
 	"github.com/dudekm/queryx/internal/protocol/minecraft"
+	"github.com/dudekm/queryx/internal/protocol/mta"
+	"github.com/dudekm/queryx/internal/protocol/samp"
 	"github.com/dudekm/queryx/internal/protocol/source"
+	"github.com/dudekm/queryx/internal/protocol/teamspeak"
 )
 
 // RegisterDefaultProtocols registers all default protocols with the client
@@ -161,6 +165,22 @@ func (c *Client) RegisterDefaultProtocols() {
 
 	altvProto := cfxre.NewProtocol(c.transport, "Alt:V")
 	c.factory.Register(string(ServerAltV), altvProto)
+
+	// Register Hytale (HyQuery Protocol)
+	hytaleProto := hytale.NewProtocol(c.transport, "Hytale")
+	c.factory.Register(string(ServerHytale), hytaleProto)
+
+	// Register SA-MP
+	sampProto := samp.NewProtocol(c.transport, "SA-MP")
+	c.factory.Register(string(ServerSAMP), sampProto)
+
+	// Register Multi Theft Auto
+	mtaProto := mta.NewProtocol(c.transport, "Multi Theft Auto")
+	c.factory.Register(string(ServerMTA), mtaProto)
+
+	// Register TeamSpeak 3
+	teamspeakProto := teamspeak.NewProtocol(c.transport, "TeamSpeak 3")
+	c.factory.Register(string(ServerTeamSpeak), teamspeakProto)
 }
 
 // NewClientWithDefaults creates a new client with all default protocols registered

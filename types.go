@@ -69,6 +69,12 @@ const (
 	// CFX.re HTTP Protocol Games
 	ServerRedM ServerType = "redm"
 	ServerAltV ServerType = "altv"
+
+	// Hytale (HyQuery Protocol)
+	ServerHytale ServerType = "hytale"
+
+	// Multi Theft Auto (ASE Protocol)
+	ServerMTA ServerType = "mta"
 )
 
 // Backward compatibility aliases
