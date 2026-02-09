@@ -18,8 +18,11 @@ const (
 
 	// Packet types
 	a2sInfoRequest  = 0x54 // 'T'
-	a2sInfoResponse = 0x49 // 'I'
+	a2sInfoResponse = 0x49 // 'I' - Source Engine response
 	a2sChallenge    = 0x41 // 'A' - Challenge response
+
+	// GoldSrc (Half-Life 1 engine) packet types
+	goldsrcInfoResponse = 0x6d // 'm' - GoldSrc response (CS 1.6, HL1, etc.)
 
 	// Default port for Source Engine games
 	defaultPort = 27015
@@ -131,6 +134,11 @@ func (p *Protocol) parseA2SInfoResponse(data []byte) (*protocol.QueryResult, err
 		return nil, fmt.Errorf("failed to read packet type: %w", err)
 	}
 
+	// Check if it's GoldSrc (CS 1.6, HL1) or Source Engine response
+	if packetType == goldsrcInfoResponse {
+		return p.parseGoldSrcResponse(reader)
+	}
+
 	if packetType != a2sInfoResponse {
 		return nil, fmt.Errorf("unexpected packet type: %x", packetType)
 	}
@@ -236,6 +244,108 @@ func (p *Protocol) parseA2SInfoResponse(data []byte) (*protocol.QueryResult, err
 	result.Extra["environment"] = string(environment)
 	result.Extra["visibility"] = visibility == 0
 	result.Extra["vac"] = vac == 1
+
+	return result, nil
+}
+
+// parseGoldSrcResponse parses a GoldSrc (Half-Life 1 engine) info response
+// Used by CS 1.6, Half-Life 1, and other GoldSrc games
+func (p *Protocol) parseGoldSrcResponse(reader *bytes.Reader) (*protocol.QueryResult, error) {
+	// Read server address (null-terminated string) - we don't need it
+	_, err := readNullTerminatedString(reader)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read server address: %w", err)
+	}
+
+	// Read server name
+	serverName, err := readNullTerminatedString(reader)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read server name: %w", err)
+	}
+
+	// Read map name
+	mapName, err := readNullTerminatedString(reader)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read map name: %w", err)
+	}
+
+	// Read game directory
+	gameDir, err := readNullTerminatedString(reader)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read game directory: %w", err)
+	}
+
+	// Read game description
+	gameDesc, err := readNullTerminatedString(reader)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read game description: %w", err)
+	}
+
+	// Read player counts
+	players, err := reader.ReadByte()
+	if err != nil {
+		return nil, fmt.Errorf("failed to read players: %w", err)
+	}
+
+	maxPlayers, err := reader.ReadByte()
+	if err != nil {
+		return nil, fmt.Errorf("failed to read max players: %w", err)
+	}
+
+	// Read protocol version
+	protocolVersion, err := reader.ReadByte()
+	if err != nil {
+		return nil, fmt.Errorf("failed to read protocol version: %w", err)
+	}
+
+	// Read server type ('d' = dedicated, 'l' = listen/non-dedicated, 'p' = HLTV proxy)
+	serverType, err := reader.ReadByte()
+	if err != nil {
+		return nil, fmt.Errorf("failed to read server type: %w", err)
+	}
+
+	// Read environment ('l' = Linux, 'w' = Windows, 'm' = Mac)
+	environment, err := reader.ReadByte()
+	if err != nil {
+		return nil, fmt.Errorf("failed to read environment: %w", err)
+	}
+
+	// Read visibility (0 = public, 1 = password protected)
+	visibility, err := reader.ReadByte()
+	if err != nil {
+		return nil, fmt.Errorf("failed to read visibility: %w", err)
+	}
+
+	// Read mod flag (0 = Half-Life, 1 = mod)
+	modFlag, err := reader.ReadByte()
+	if err != nil {
+		return nil, fmt.Errorf("failed to read mod flag: %w", err)
+	}
+
+	// If it's a mod (modFlag == 1), there are additional fields we can skip
+	// For simplicity, we'll just skip to the end
+
+	// Build result
+	result := &protocol.QueryResult{
+		Online:     true,
+		Name:       serverName,
+		Map:        mapName,
+		NumPlayers: int(players),
+		MaxPlayers: int(maxPlayers),
+		Bots:       0,  // GoldSrc doesn't report bots separately
+		Version:    "", // GoldSrc doesn't include version in basic query
+		Password:   visibility == 1,
+		Extra:      make(map[string]interface{}),
+	}
+
+	// Add extra information
+	result.Extra["protocol"] = protocolVersion
+	result.Extra["game"] = gameDesc
+	result.Extra["gameDir"] = gameDir
+	result.Extra["serverType"] = string(serverType)
+	result.Extra["environment"] = string(environment)
+	result.Extra["mod"] = modFlag == 1
+	result.Extra["engine"] = "GoldSrc"
 
 	return result, nil
 }

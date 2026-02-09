@@ -374,3 +374,146 @@ func buildMockA2SInfoResponse(serverName, mapName, game string, players, maxPlay
 
 	return buf.Bytes()
 }
+
+// TestProtocol_Query_GoldSrc tests querying GoldSrc (CS 1.6) servers
+func TestProtocol_Query_GoldSrc(t *testing.T) {
+	mockTransport := transport.NewMockTransport()
+
+	// Build mock GoldSrc response (CS 1.6)
+	response := buildMockGoldSrcResponse(
+		"Test CS 1.6 Server",
+		"de_dust2",
+		"valve",
+		"Counter-Strike",
+		10, // players
+		16, // max players
+	)
+
+	mockTransport.UDPResponses["127.0.0.1:27015"] = response
+
+	p := NewProtocol(mockTransport, "Counter-Strike 1.6")
+	ctx := context.Background()
+
+	result, err := p.Query(ctx, "127.0.0.1:27015")
+
+	assert.NoError(t, err)
+	assert.NotNil(t, result)
+	assert.True(t, result.Online)
+	assert.Equal(t, "Test CS 1.6 Server", result.Name)
+	assert.Equal(t, "de_dust2", result.Map)
+	assert.Equal(t, 10, result.NumPlayers)
+	assert.Equal(t, 16, result.MaxPlayers)
+	assert.Equal(t, 0, result.Bots) // GoldSrc doesn't report bots
+	assert.Equal(t, "Counter-Strike", result.Extra["game"])
+	assert.Equal(t, "valve", result.Extra["gameDir"])
+	assert.Equal(t, "GoldSrc", result.Extra["engine"])
+}
+
+// TestProtocol_Query_GoldSrc_WithPassword tests GoldSrc password-protected servers
+func TestProtocol_Query_GoldSrc_WithPassword(t *testing.T) {
+	mockTransport := transport.NewMockTransport()
+
+	// Build mock GoldSrc response with password
+	buf := &bytes.Buffer{}
+	binary.Write(buf, binary.LittleEndian, int32(headerMagic))
+	buf.WriteByte(goldsrcInfoResponse)
+
+	// Server address
+	buf.WriteString("127.0.0.1:27015")
+	buf.WriteByte(0x00)
+
+	// Server name
+	buf.WriteString("Private Server")
+	buf.WriteByte(0x00)
+
+	// Map
+	buf.WriteString("de_dust")
+	buf.WriteByte(0x00)
+
+	// Game dir
+	buf.WriteString("valve")
+	buf.WriteByte(0x00)
+
+	// Game description
+	buf.WriteString("Counter-Strike")
+	buf.WriteByte(0x00)
+
+	// Players, max players, protocol
+	buf.WriteByte(5)  // players
+	buf.WriteByte(10) // max players
+	buf.WriteByte(48) // protocol
+
+	// Server type, environment
+	buf.WriteByte('d') // dedicated
+	buf.WriteByte('l') // linux
+
+	// Visibility (1 = password protected)
+	buf.WriteByte(1)
+
+	// Mod flag
+	buf.WriteByte(0)
+
+	mockTransport.UDPResponses["127.0.0.1:27015"] = buf.Bytes()
+
+	p := NewProtocol(mockTransport, "Counter-Strike 1.6")
+	ctx := context.Background()
+
+	result, err := p.Query(ctx, "127.0.0.1:27015")
+
+	assert.NoError(t, err)
+	assert.NotNil(t, result)
+	assert.True(t, result.Password) // Should detect password
+	assert.Equal(t, "Private Server", result.Name)
+}
+
+// buildMockGoldSrcResponse builds a mock GoldSrc (CS 1.6) response for testing
+func buildMockGoldSrcResponse(serverName, mapName, gameDir, gameDesc string, players, maxPlayers byte) []byte {
+	buf := &bytes.Buffer{}
+
+	// Magic header
+	binary.Write(buf, binary.LittleEndian, int32(headerMagic))
+
+	// Packet type (GoldSrc)
+	buf.WriteByte(goldsrcInfoResponse)
+
+	// Server address (we use a dummy value)
+	buf.WriteString("127.0.0.1:27015")
+	buf.WriteByte(0x00)
+
+	// Server name
+	buf.WriteString(serverName)
+	buf.WriteByte(0x00)
+
+	// Map
+	buf.WriteString(mapName)
+	buf.WriteByte(0x00)
+
+	// Game directory
+	buf.WriteString(gameDir)
+	buf.WriteByte(0x00)
+
+	// Game description
+	buf.WriteString(gameDesc)
+	buf.WriteByte(0x00)
+
+	// Players
+	buf.WriteByte(players)
+	buf.WriteByte(maxPlayers)
+
+	// Protocol version
+	buf.WriteByte(48)
+
+	// Server type
+	buf.WriteByte('d') // Dedicated
+
+	// Environment
+	buf.WriteByte('l') // Linux
+
+	// Visibility
+	buf.WriteByte(0x00) // Public (no password)
+
+	// Mod flag
+	buf.WriteByte(0) // Not a mod
+
+	return buf.Bytes()
+}
