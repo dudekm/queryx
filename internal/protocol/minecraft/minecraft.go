@@ -69,7 +69,6 @@ func (p *Protocol) QueryWithHostname(ctx context.Context, addr string, hostname 
 		return nil, fmt.Errorf("failed to parse response: %w", err)
 	}
 
-	result.Raw = response
 	result.Ping = ping // Set network latency
 	return result, nil
 }
@@ -213,7 +212,14 @@ func (p *Protocol) parseResponse(data []byte) (*protocol.QueryResult, error) {
 	}
 
 	// Convert to QueryResult
-	return p.convertToQueryResult(&response), nil
+	result := p.convertToQueryResult(&response)
+
+	// Parse as generic map for Raw field
+	var rawParsed map[string]interface{}
+	json.Unmarshal(jsonData, &rawParsed)
+	result.Raw = rawParsed
+
+	return result, nil
 }
 
 // convertToQueryResult converts server response to QueryResult

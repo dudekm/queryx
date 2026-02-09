@@ -189,7 +189,7 @@ func (c *Client) Query(ctx context.Context, gameType GameType, host string, port
 		Password:   protocolResult.Password,
 		Extra:      protocolResult.Extra,
 		Players:    make([]Player, len(protocolResult.Players)),
-		Raw:        protocolResult.Raw,
+		Raw:        protocolResult.Raw, // Copy raw JSON directly
 		QueriedAt:  startTime,
 	}
 

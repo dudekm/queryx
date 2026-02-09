@@ -86,7 +86,7 @@ func (p *Protocol) Query(ctx context.Context, addr string) (*protocol.QueryResul
 		return nil, fmt.Errorf("failed to parse response: %w", err)
 	}
 
-	result.Raw = response
+	result.Raw = nil   // Source Engine doesn't return JSON
 	result.Ping = ping // Set network latency
 	return result, nil
 }
@@ -263,9 +263,9 @@ func (p *Protocol) Name() string {
 	return fmt.Sprintf("%s (Source Engine)", p.gameName)
 }
 
-// DefaultPort returns the default Source Engine port
+// DefaultPort returns the default Source Engine port for this game
 func (p *Protocol) DefaultPort() int {
-	return defaultPort
+	return GetDefaultPort(p.gameName)
 }
 
 // SupportsSRV indicates that Source Engine does not use SRV records

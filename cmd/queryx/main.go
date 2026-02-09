@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	ejson "encoding/json"
 	"flag"
 	"fmt"
 	"os"
@@ -88,13 +89,13 @@ func main() {
 
 	// Output result
 	if *json {
-		printJSON(result)
+		printJSON(result, *debug)
 	} else {
-		printFormatted(result)
+		printFormatted(result, *debug)
 	}
 }
 
-func printFormatted(result *queryx.QueryResult) {
+func printFormatted(result *queryx.QueryResult, debug bool) {
 	fmt.Printf("═══════════════════════════════════════\n")
 	fmt.Printf("  %s\n", result.Name)
 	fmt.Printf("═══════════════════════════════════════\n")
@@ -152,27 +153,21 @@ func printFormatted(result *queryx.QueryResult) {
 		}
 	}
 
+	// Show raw data info
+	if result.Raw != nil {
+		fmt.Printf("\n  Raw data:\n")
+		fmt.Printf("    JSON:       available (use -json to see)\n")
+	}
+
 	fmt.Printf("\n  Queried at:   %s\n", result.QueriedAt.Format("2006-01-02 15:04:05"))
 	fmt.Printf("\n")
 }
 
-func printJSON(result *queryx.QueryResult) {
-	fmt.Printf("{\n")
-	fmt.Printf("  \"online\": %t,\n", result.Online)
-	fmt.Printf("  \"name\": %q,\n", result.Name)
-	fmt.Printf("  \"type\": %q,\n", result.Type)
-	fmt.Printf("  \"version\": %q,\n", result.Version)
-	fmt.Printf("  \"numplayers\": %d,\n", result.NumPlayers)
-	fmt.Printf("  \"maxplayers\": %d,\n", result.MaxPlayers)
-	fmt.Printf("  \"bots\": %d,\n", result.Bots)
-	fmt.Printf("  \"players\": [],\n")
-	if result.Map != "" {
-		fmt.Printf("  \"map\": %q,\n", result.Map)
+func printJSON(result *queryx.QueryResult, debug bool) {
+	data, err := ejson.MarshalIndent(result, "", "  ")
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error marshaling JSON: %v\n", err)
+		os.Exit(1)
 	}
-	if result.Password {
-		fmt.Printf("  \"password\": %t,\n", result.Password)
-	}
-	fmt.Printf("  \"ping\": %q,\n", formatPing(result.Ping))
-	fmt.Printf("  \"queriedAt\": %q\n", result.QueriedAt.Format(time.RFC3339))
-	fmt.Printf("}\n")
+	fmt.Println(string(data))
 }

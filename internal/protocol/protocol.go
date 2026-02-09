@@ -21,7 +21,7 @@ type QueryResult struct {
 	Connect    string // Connection string (host:port)
 	Password   bool   // Whether server requires password
 	Extra      map[string]interface{}
-	Raw        []byte
+	Raw        interface{} // Raw server response as parsed JSON (for protocols that support it)
 	QueriedAt  time.Time
 }
 

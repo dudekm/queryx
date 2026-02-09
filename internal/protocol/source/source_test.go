@@ -72,7 +72,7 @@ func TestProtocol_Query_Success(t *testing.T) {
 	assert.Equal(t, 10, result.NumPlayers)
 	assert.Equal(t, 2, result.Bots)
 	assert.Equal(t, 20, result.MaxPlayers)
-	assert.NotNil(t, result.Raw)
+	assert.Nil(t, result.Raw) // Source Engine doesn't return JSON
 }
 
 func TestProtocol_Query_TransportError(t *testing.T) {
@@ -198,6 +198,123 @@ func TestReadNullTerminatedString(t *testing.T) {
 			result, err := readNullTerminatedString(reader)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+// TestSourceProtocol_AllGames tests all games using Source Engine A2S protocol
+func TestSourceProtocol_AllGames(t *testing.T) {
+	games := []struct {
+		name         string
+		gameName     string
+		expectedPort int
+	}{
+		// Valve Source Engine Games
+		{"Team Fortress 2", "tf2", 27015},
+		{"Left 4 Dead", "l4d", 27015},
+		{"Left 4 Dead 2", "l4d2", 27015},
+		{"Garry's Mod", "gmod", 27015},
+		{"Black Mesa", "blackmesa", 27015},
+		{"Day of Infamy", "dayofinfamy", 27015},
+		{"Insurgency", "insurgency", 27015},
+		{"Insurgency: Sandstorm", "insurgencysandstorm", 27015},
+		{"Killing Floor 2", "killingfloor2", 27015},
+
+		// Counter-Strike Games
+		{"Counter-Strike 1.6", "cs16", 27015},
+		{"Counter-Strike: Source", "cssource", 27015},
+		{"Counter-Strike 2", "cs2", 27015},
+
+		// Survival Games Using A2S
+		{"ARK: Survival Evolved", "ark", 27015},
+		{"ARK: Survival Ascended", "arkascended", 27015},
+		{"ATLAS", "atlas", 27015},
+		{"Conan Exiles", "conanexiles", 27015},
+		{"7 Days to Die", "7daystodie", 26900},
+		{"Rust", "rust", 28015},
+
+		// Co-op/Tactical Games
+		{"Barotrauma", "barotrauma", 27015},
+		{"Hell Let Loose", "hellletloose", 27015},
+		{"Post Scriptum", "postscriptum", 27015},
+		{"Squad", "squad", 27015},
+		{"Rising Storm 2: Vietnam", "risingstorm2", 27015},
+
+		// Space/Sandbox Games
+		{"Avorion", "avorion", 27015},
+		{"Empyrion - Galactic Survival", "empyrion", 30000},
+		{"Stationeers", "stationeers", 27015},
+		{"Space Engineers", "spaceengineers", 27015},
+
+		// Other Survival/Sandbox
+		{"Hurtworld", "hurtworld", 12871},
+		{"ICARUS", "icarus", 17777},
+		{"Enshrouded", "enshrouded", 15636},
+		{"V Rising", "vrising", 27015},
+		{"Unturned", "unturned", 27015},
+		{"The Forest", "theforest", 27015},
+		{"No One Survived", "noonesurvived", 27015},
+		{"Miscreated", "miscreated", 27015},
+		{"DeadPoly", "deadpoly", 27015},
+		{"Dysterra", "dysterra", 27015},
+		{"Subsistence", "subsistence", 27015},
+		{"PixARK", "pixark", 27015},
+		{"Valheim", "valheim", 2456},
+	}
+
+	for _, game := range games {
+		t.Run(game.name, func(t *testing.T) {
+			mockTransport := transport.NewMockTransport()
+
+			// Build mock response
+			response := buildMockA2SInfoResponse(
+				"Test "+game.name+" Server",
+				"test_map",
+				game.name,
+				5,  // players
+				10, // max players
+				0,  // bots
+			)
+
+			mockTransport.UDPResponses["test:27015"] = response
+
+			proto := NewProtocol(mockTransport, game.gameName)
+			result, err := proto.Query(context.Background(), "test:27015")
+
+			assert.NoError(t, err)
+			assert.NotNil(t, result)
+			assert.True(t, result.Online)
+			assert.Equal(t, "Test "+game.name+" Server", result.Name)
+			assert.Equal(t, "test_map", result.Map)
+			assert.Equal(t, 5, result.NumPlayers)
+			assert.Equal(t, 10, result.MaxPlayers)
+			assert.Equal(t, game.expectedPort, proto.DefaultPort())
+		})
+	}
+}
+
+// TestGetDefaultPort tests the port lookup function
+func TestGetDefaultPort(t *testing.T) {
+	tests := []struct {
+		gameName     string
+		expectedPort int
+	}{
+		{"tf2", 27015},
+		{"Team Fortress 2", 27015},
+		{"rust", 28015},
+		{"Rust", 28015},
+		{"7daystodie", 26900},
+		{"empyrion", 30000},
+		{"hurtworld", 12871},
+		{"icarus", 17777},
+		{"valheim", 2456},
+		{"unknown_game", 27015}, // fallback
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.gameName, func(t *testing.T) {
+			port := GetDefaultPort(tt.gameName)
+			assert.Equal(t, tt.expectedPort, port)
 		})
 	}
 }
