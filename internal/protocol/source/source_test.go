@@ -72,7 +72,12 @@ func TestProtocol_Query_Success(t *testing.T) {
 	assert.Equal(t, 10, result.NumPlayers)
 	assert.Equal(t, 2, result.Bots)
 	assert.Equal(t, 20, result.MaxPlayers)
-	assert.Nil(t, result.Raw) // Source Engine doesn't return JSON
+	assert.NotNil(t, result.Raw) // Raw now contains all server data
+
+	// Check Raw data
+	rawData, ok := result.Raw.(map[string]interface{})
+	assert.True(t, ok)
+	assert.Equal(t, "Counter-Strike 2", rawData["game"])
 }
 
 func TestProtocol_Query_TransportError(t *testing.T) {
@@ -404,9 +409,13 @@ func TestProtocol_Query_GoldSrc(t *testing.T) {
 	assert.Equal(t, 10, result.NumPlayers)
 	assert.Equal(t, 16, result.MaxPlayers)
 	assert.Equal(t, 0, result.Bots) // GoldSrc doesn't report bots
-	assert.Equal(t, "Counter-Strike", result.Extra["game"])
-	assert.Equal(t, "valve", result.Extra["gameDir"])
-	assert.Equal(t, "GoldSrc", result.Extra["engine"])
+
+	// Check Raw data
+	rawData, ok := result.Raw.(map[string]interface{})
+	assert.True(t, ok)
+	assert.Equal(t, "Counter-Strike", rawData["game"])
+	assert.Equal(t, "valve", rawData["gameDir"])
+	assert.Equal(t, "GoldSrc", rawData["engine"])
 }
 
 // TestProtocol_Query_GoldSrc_WithPassword tests GoldSrc password-protected servers

@@ -358,8 +358,9 @@ func TestIntegration_APIContract(t *testing.T) {
 	assert.IsType(t, "", result.Connect, "Connect must be string")
 	assert.IsType(t, false, result.Password, "Password must be bool")
 	assert.IsType(t, map[string]interface{}{}, result.Extra, "Extra must be map")
-	// Raw is interface{} - can be nil, []byte, map[string]interface{}, or other types depending on protocol
-	// For Source Engine (CS2), it's nil because the protocol doesn't return JSON
+	// Raw is interface{} - contains all server data (map[string]interface{} for most protocols)
+	// For Source Engine (CS2), it contains parsed server data
+	assert.NotNil(t, result.Raw, "Raw must not be nil")
 	assert.IsType(t, time.Time{}, result.QueriedAt, "QueriedAt must be time.Time")
 
 	// This test ensures the public API never breaks!

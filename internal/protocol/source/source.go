@@ -89,7 +89,6 @@ func (p *Protocol) Query(ctx context.Context, addr string) (*protocol.QueryResul
 		return nil, fmt.Errorf("failed to parse response: %w", err)
 	}
 
-	result.Raw = nil   // Source Engine doesn't return JSON
 	result.Ping = ping // Set network latency
 	return result, nil
 }
@@ -232,18 +231,19 @@ func (p *Protocol) parseA2SInfoResponse(data []byte) (*protocol.QueryResult, err
 		Bots:       int(bots),
 		Version:    version,
 		Password:   visibility != 0, // visibility 0 = public, 1 = private/password
-		Extra:      make(map[string]interface{}),
 	}
 
-	// Add extra information
-	result.Extra["protocol"] = protocolVersion
-	result.Extra["game"] = game
-	result.Extra["folder"] = folder
-	result.Extra["gameID"] = gameID
-	result.Extra["serverType"] = string(serverType)
-	result.Extra["environment"] = string(environment)
-	result.Extra["visibility"] = visibility == 0
-	result.Extra["vac"] = vac == 1
+	// Put ALL server data in Raw
+	result.Raw = map[string]interface{}{
+		"protocol":    protocolVersion,
+		"game":        game,
+		"folder":      folder,
+		"gameID":      gameID,
+		"serverType":  string(serverType),
+		"environment": string(environment),
+		"visibility":  visibility == 0,
+		"vac":         vac == 1,
+	}
 
 	return result, nil
 }
@@ -335,17 +335,18 @@ func (p *Protocol) parseGoldSrcResponse(reader *bytes.Reader) (*protocol.QueryRe
 		Bots:       0,  // GoldSrc doesn't report bots separately
 		Version:    "", // GoldSrc doesn't include version in basic query
 		Password:   visibility == 1,
-		Extra:      make(map[string]interface{}),
 	}
 
-	// Add extra information
-	result.Extra["protocol"] = protocolVersion
-	result.Extra["game"] = gameDesc
-	result.Extra["gameDir"] = gameDir
-	result.Extra["serverType"] = string(serverType)
-	result.Extra["environment"] = string(environment)
-	result.Extra["mod"] = modFlag == 1
-	result.Extra["engine"] = "GoldSrc"
+	// Put ALL server data in Raw
+	result.Raw = map[string]interface{}{
+		"protocol":    protocolVersion,
+		"game":        gameDesc,
+		"gameDir":     gameDir,
+		"serverType":  string(serverType),
+		"environment": string(environment),
+		"mod":         modFlag == 1,
+		"engine":      "GoldSrc", // Our addition to identify protocol type
+	}
 
 	return result, nil
 }
