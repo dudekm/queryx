@@ -110,7 +110,7 @@ func TestClient_Query_Success(t *testing.T) {
 	assert.Equal(t, "Test Server", result.Name)
 	assert.Equal(t, 5, result.NumPlayers)
 	assert.Equal(t, "minecraft", result.Type)
-	assert.GreaterOrEqual(t, result.Ping, float64(0))
+	assert.GreaterOrEqual(t, result.Ping, 0)
 }
 
 func TestClient_Query_UnsupportedGame(t *testing.T) {

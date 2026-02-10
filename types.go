@@ -14,7 +14,7 @@ type GameType = ServerType
 
 const (
 	ServerMinecraft        ServerType = "minecraft"
-	ServerMinecraftBedrock ServerType = "minecraft_bedrock"
+	ServerMinecraftBedrock ServerType = "minecraftbedrock"
 	ServerCS16             ServerType = "cs16"
 	ServerCSSource         ServerType = "cssource"
 	ServerCS2              ServerType = "cs2"

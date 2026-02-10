@@ -58,7 +58,7 @@ func (p *Protocol) QueryWithHostname(ctx context.Context, addr string, hostname 
 	pingStart := time.Now()
 	response, err := p.Transport.SendTCP(ctx, addr, request)
 	pingDuration := time.Since(pingStart)
-	pingMs := float64(pingDuration.Microseconds()) / 1000.0
+	pingMs := int(pingDuration.Round(time.Millisecond).Milliseconds())
 
 	if err != nil {
 		return nil, fmt.Errorf("failed to send request: %w", err)

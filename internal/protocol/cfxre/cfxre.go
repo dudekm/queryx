@@ -70,7 +70,7 @@ func (p *Protocol) Query(ctx context.Context, addr string) (*protocol.QueryResul
 	pingStart := time.Now()
 	infoData, err := p.Transport.SendHTTP(ctx, baseURL+"/info.json")
 	pingDuration := time.Since(pingStart)
-	pingMs := float64(pingDuration.Microseconds()) / 1000.0
+	pingMs := int(pingDuration.Round(time.Millisecond).Milliseconds())
 
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch /info.json: %w", err)

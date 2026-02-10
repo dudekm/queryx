@@ -95,7 +95,7 @@ func (p *Protocol) Query(ctx context.Context, addr string) (*protocol.QueryResul
 	}
 
 	pingDuration := time.Since(pingStart)
-	pingMs := float64(pingDuration.Microseconds()) / 1000.0
+	pingMs := int(pingDuration.Round(time.Millisecond).Milliseconds())
 
 	// Parse serverinfo response
 	result, err := parseServerInfo(infoLine)

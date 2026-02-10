@@ -98,7 +98,7 @@ type QueryResult struct {
     Bots       int         // Number of bots
     Type       string      // Server type (minecraft, cs2, etc.)
     Version    string      // Server version
-    Ping       float64     // Network latency in milliseconds (e.g., 595.25)
+    Ping       int         // Network latency in milliseconds (e.g., 587)
     Password   bool        // Password required flag
     Raw        interface{} // ALL protocol-specific data goes HERE
 }
@@ -115,7 +115,7 @@ When implementing a protocol, **always map to these standard fields**:
 - `Players` - Detailed player list (name, score, duration)
 - `Bots` - Number of bots (if protocol distinguishes them)
 - `Version` - Server version string
-- `Ping` - Network round-trip time in milliseconds (float64, e.g., 595.25)
+- `Ping` - Network round-trip time in milliseconds (int, e.g., 587)
 - `Password` - Does server require password?
 
 #### Protocol-Specific Data Goes to `Raw`
@@ -332,7 +332,7 @@ Follow this pattern (documented in README, but key points):
 - **Put protocol-specific data ONLY in `Raw`**: Everything that doesn't fit standard fields goes to `Raw` - no exceptions
 - **Don't use `Extra` field**: It exists for backward compatibility but should NOT be used in new protocols
 - **Use zero values for missing fields**: If protocol doesn't provide map name, set `Map: ""` (empty string, not nil)
-- **Measure ping properly**: Record network latency in milliseconds as float64 (convert from time.Duration using `float64(duration.Microseconds()) / 1000.0`)
+- **Measure ping properly**: Record network latency in milliseconds as int (convert from time.Duration using `int(duration.Round(time.Millisecond).Milliseconds())`)
 
 Example mapping:
 ```go
@@ -344,7 +344,7 @@ playerCount := parsePlayerCount(response)
 pingStart := time.Now()
 response, err := transport.SendUDP(ctx, addr, request)
 pingDuration := time.Since(pingStart)
-pingMs := float64(pingDuration.Microseconds()) / 1000.0
+pingMs := int(pingDuration.Round(time.Millisecond).Milliseconds())
 
 // Parse ALL protocol-specific data into Raw
 // This can be: full JSON, parsed struct, map[string]interface{}, etc.
@@ -366,7 +366,7 @@ return &protocol.QueryResult{
     Players:    parsePlayers(response),  // standard field (or nil if not available)
     Bots:       parseBots(response),     // standard field (or 0 if not available)
     Version:    parseVersion(response),  // standard field (or "" if not available)
-    Ping:       pingMs,                  // network latency in milliseconds (float64)
+    Ping:       pingMs,                  // network latency in milliseconds (int)
     Password:   parsePasswordFlag(response), // standard field (or false if unknown)
     Raw:        rawData,                 // ALL protocol-specific data → ONLY Raw
 }, nil

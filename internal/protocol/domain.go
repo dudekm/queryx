@@ -12,7 +12,7 @@ type QueryResult struct {
 	Bots       int         `json:"bots"`          // Number of bots (0 if not available)
 	Type       string      `json:"type"`          // Server type (minecraft, cs2, etc.)
 	Version    string      `json:"version"`       // Server version (empty string if not available)
-	Ping       float64     `json:"ping"`          // Ping in milliseconds (e.g., 595.25)
+	Ping       int         `json:"ping"`          // Network latency in milliseconds (e.g., 587)
 	Password   bool        `json:"password"`      // Whether server requires password (false if not available)
 	Raw        interface{} `json:"raw,omitempty"` // ALL protocol-specific data (full response, game tags, mods, etc.)
 }

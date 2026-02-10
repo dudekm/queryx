@@ -160,7 +160,7 @@ func TestIntegration_Minecraft_FullFlow(t *testing.T) {
 	assert.Equal(t, 200000, result.MaxPlayers, "Max players should be 200000")
 	assert.Equal(t, 0, result.Bots, "Minecraft has no bots")
 	assert.Equal(t, "Hypixel BETA", result.Version, "Version should match")
-	assert.GreaterOrEqual(t, result.Ping, float64(0), "Ping should be non-negative")
+	assert.GreaterOrEqual(t, result.Ping, 0, "Ping should be non-negative")
 
 	// You can refactor internal/* all you want - this test will still pass!
 }
@@ -204,7 +204,7 @@ func TestIntegration_CounterStrike_FullFlow(t *testing.T) {
 	assert.Equal(t, 0, result.Bots, "Should have 0 bots")
 	assert.Equal(t, "1.41.3.5", result.Version, "Version should match")
 	assert.False(t, result.Password, "Server should be public")
-	assert.GreaterOrEqual(t, result.Ping, float64(0), "Ping should be non-negative")
+	assert.GreaterOrEqual(t, result.Ping, 0, "Ping should be non-negative")
 
 	// Check Raw contains protocol-specific data (Source protocol returns SourceInfo struct)
 	sourceInfo, ok := result.Raw.(*source.SourceInfo)
@@ -356,7 +356,7 @@ func TestIntegration_APIContract(t *testing.T) {
 	assert.IsType(t, 0, result.Bots, "Bots must be int")
 	assert.IsType(t, "", result.Type, "Type must be string")
 	assert.IsType(t, "", result.Version, "Version must be string")
-	assert.IsType(t, float64(0), result.Ping, "Ping must be float64")
+	assert.IsType(t, 0, result.Ping, "Ping must be int")
 	assert.IsType(t, false, result.Password, "Password must be bool")
 	// Raw is interface{} - contains ALL protocol-specific data (map[string]interface{} or custom struct)
 	// For Source Engine (CS2), it contains parsed server data

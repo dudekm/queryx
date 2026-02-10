@@ -122,7 +122,7 @@ func (p *Protocol) Query(ctx context.Context, addr string) (*protocol.QueryResul
 		return nil, fmt.Errorf("failed to parse response: %w", err)
 	}
 
-	pingMs := float64(pingDuration.Microseconds()) / 1000.0
+	pingMs := int(pingDuration.Round(time.Millisecond).Milliseconds())
 	result.Ping = pingMs // Set network latency in milliseconds
 	return result, nil
 }

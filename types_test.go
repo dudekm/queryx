@@ -14,7 +14,7 @@ func TestGameTypeConstants(t *testing.T) {
 		expected string
 	}{
 		{"Minecraft Java", GameMinecraft, "minecraft"},
-		{"Minecraft Bedrock", GameMinecraftBedrock, "minecraft_bedrock"},
+		{"Minecraft Bedrock", GameMinecraftBedrock, "minecraftbedrock"},
 		{"CS 1.6", GameCS16, "cs16"},
 		{"CS Source", GameCSSource, "cssource"},
 		{"CS2", GameCS2, "cs2"},

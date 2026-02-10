@@ -21,21 +21,9 @@ var (
 	version  = flag.Bool("version", false, "Show version information")
 )
 
-// formatPing formats ping in milliseconds with appropriate precision
-func formatPing(ms float64) string {
-	if ms < 1 {
-		// Sub-millisecond: show 2 decimal places (e.g., "0.85ms")
-		return fmt.Sprintf("%.2fms", ms)
-	} else if ms < 10 {
-		// 1-10ms: show 2 decimal places (e.g., "5.23ms")
-		return fmt.Sprintf("%.2fms", ms)
-	} else if ms < 100 {
-		// 10-100ms: show 1 decimal place (e.g., "53.8ms")
-		return fmt.Sprintf("%.1fms", ms)
-	} else {
-		// >= 100ms: show whole number (e.g., "582ms")
-		return fmt.Sprintf("%.0fms", ms)
-	}
+// formatPing formats ping in milliseconds
+func formatPing(ms int) string {
+	return fmt.Sprintf("%dms", ms)
 }
 
 const (
