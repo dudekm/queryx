@@ -1,5 +1,11 @@
 # QueryX
 
+[![Test](https://github.com/dudekm/queryx/actions/workflows/test.yml/badge.svg)](https://github.com/dudekm/queryx/actions/workflows/test.yml)
+[![Go Report Card](https://goreportcard.com/badge/github.com/dudekm/queryx)](https://goreportcard.com/report/github.com/dudekm/queryx)
+[![codecov](https://codecov.io/gh/dudekm/queryx/branch/main/graph/badge.svg)](https://codecov.io/gh/dudekm/queryx)
+[![Go Reference](https://pkg.go.dev/badge/github.com/dudekm/queryx.svg)](https://pkg.go.dev/github.com/dudekm/queryx)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 Universal Go library for querying game servers (Minecraft, Counter-Strike, etc.).
 
 ## 🎮 Supported Games
