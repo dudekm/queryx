@@ -179,11 +179,11 @@ func parseInfoResponse(data []byte) (*protocol.QueryResult, error) {
 		NumPlayers: numPlayers,
 		MaxPlayers: maxPlayers,
 		Password:   password,
-		Extra:      make(map[string]interface{}),
+		Raw: map[string]interface{}{
+			"language": language,
+			"gamemode": gamemode,
+		},
 	}
-
-	result.Extra["language"] = language
-	result.Extra["gamemode"] = gamemode
 
 	return result, nil
 }

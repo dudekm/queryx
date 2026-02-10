@@ -48,7 +48,11 @@ func TestParseASEResponse_EYE1(t *testing.T) {
 	assert.Equal(t, 32, result.MaxPlayers)
 	assert.Equal(t, "1.6.0-9.21261.0", result.Version)
 	assert.False(t, result.Password)
-	assert.Equal(t, "Race", result.Extra["gamemode"])
+
+	// Check Raw contains protocol-specific data
+	rawMap, ok := result.Raw.(map[string]interface{})
+	assert.True(t, ok, "Raw should be a map")
+	assert.Equal(t, "Race", rawMap["gamemode"])
 }
 
 func TestParseASEResponse_WithPassword(t *testing.T) {

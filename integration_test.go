@@ -206,10 +206,12 @@ func TestIntegration_CounterStrike_FullFlow(t *testing.T) {
 	assert.False(t, result.Password, "Server should be public")
 	assert.GreaterOrEqual(t, result.Ping, time.Duration(0), "Ping should be non-negative")
 
-	// Check extra info
-	assert.Equal(t, uint16(730), result.Extra["gameID"], "GameID should be 730")
-	assert.Equal(t, true, result.Extra["vac"], "VAC should be enabled")
-	assert.Equal(t, "Counter-Strike 2", result.Extra["game"], "Game name should match")
+	// Check Raw contains protocol-specific data
+	rawMap, ok := result.Raw.(map[string]interface{})
+	assert.True(t, ok, "Raw should be a map")
+	assert.Equal(t, uint16(730), rawMap["gameID"], "GameID should be 730")
+	assert.Equal(t, true, rawMap["vac"], "VAC should be enabled")
+	assert.Equal(t, "Counter-Strike 2", rawMap["game"], "Game name should match")
 
 	// You can refactor Protocol internals - this test still passes!
 }
@@ -357,8 +359,7 @@ func TestIntegration_APIContract(t *testing.T) {
 	assert.IsType(t, time.Duration(0), result.Ping, "Ping must be time.Duration")
 	assert.IsType(t, "", result.Connect, "Connect must be string")
 	assert.IsType(t, false, result.Password, "Password must be bool")
-	assert.IsType(t, map[string]interface{}{}, result.Extra, "Extra must be map")
-	// Raw is interface{} - contains all server data (map[string]interface{} for most protocols)
+	// Raw is interface{} - contains ALL protocol-specific data (map[string]interface{} or custom struct)
 	// For Source Engine (CS2), it contains parsed server data
 	assert.NotNil(t, result.Raw, "Raw must not be nil")
 	assert.IsType(t, time.Time{}, result.QueriedAt, "QueriedAt must be time.Time")

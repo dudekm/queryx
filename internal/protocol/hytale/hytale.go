@@ -125,6 +125,16 @@ func parseResponse(data []byte) (*protocol.QueryResult, error) {
 		return nil, fmt.Errorf("failed to read version: %w", err)
 	}
 
+	// Build raw data
+	rawData := map[string]interface{}{
+		"port":         port,
+		"responseType": responseType,
+	}
+
+	if motd != "" {
+		rawData["motd"] = motd
+	}
+
 	// Build result
 	result := &protocol.QueryResult{
 		Online:     true,
@@ -132,15 +142,7 @@ func parseResponse(data []byte) (*protocol.QueryResult, error) {
 		NumPlayers: int(onlinePlayers),
 		MaxPlayers: int(maxPlayers),
 		Version:    version,
-		Extra:      make(map[string]interface{}),
 	}
-
-	// Add MOTD to extra
-	if motd != "" {
-		result.Extra["motd"] = motd
-	}
-	result.Extra["port"] = port
-	result.Extra["responseType"] = responseType
 
 	// If full query response, parse players and plugins
 	if responseType == queryTypeFull && offset < len(data) {
@@ -154,11 +156,12 @@ func parseResponse(data []byte) (*protocol.QueryResult, error) {
 		if offset < len(data) {
 			plugins, _, err := parsePlugins(data, offset)
 			if err == nil && len(plugins) > 0 {
-				result.Extra["plugins"] = plugins
+				rawData["plugins"] = plugins
 			}
 		}
 	}
 
+	result.Raw = rawData
 	return result, nil
 }
 

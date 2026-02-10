@@ -161,19 +161,10 @@ func parseASEResponse(data []byte) (*protocol.QueryResult, error) {
 	maxPlayers := int(maxPlayersBytes[0]) | (int(maxPlayersBytes[1]) << 8)
 
 	// Build result
-	result := &protocol.QueryResult{
-		Online:     true,
-		Name:       serverName,
-		Map:        mapName,
-		NumPlayers: numPlayers,
-		MaxPlayers: maxPlayers,
-		Version:    version,
-		Password:   passwordFlag != 0,
-		Extra:      make(map[string]interface{}),
+	rawData := map[string]interface{}{
+		"gamemode": gameMode,
+		"gametype": string(gameType[:len(gameType)-1]), // Remove null terminator
 	}
-
-	result.Extra["gamemode"] = gameMode
-	result.Extra["gametype"] = string(gameType[:len(gameType)-1]) // Remove null terminator
 
 	// Try to parse rules (remaining data)
 	if reader.Len() > 2 {
@@ -196,9 +187,20 @@ func parseASEResponse(data []byte) (*protocol.QueryResult, error) {
 			}
 
 			if len(rules) > 0 {
-				result.Extra["rules"] = rules
+				rawData["rules"] = rules
 			}
 		}
+	}
+
+	result := &protocol.QueryResult{
+		Online:     true,
+		Name:       serverName,
+		Map:        mapName,
+		NumPlayers: numPlayers,
+		MaxPlayers: maxPlayers,
+		Version:    version,
+		Password:   passwordFlag != 0,
+		Raw:        rawData,
 	}
 
 	return result, nil

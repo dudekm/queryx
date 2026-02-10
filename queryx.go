@@ -187,9 +187,8 @@ func (c *Client) Query(ctx context.Context, gameType GameType, host string, port
 		Ping:       protocolResult.Ping, // Network latency from protocol
 		Connect:    protocolResult.Connect,
 		Password:   protocolResult.Password,
-		Extra:      protocolResult.Extra,
 		Players:    make([]Player, len(protocolResult.Players)),
-		Raw:        protocolResult.Raw, // Copy raw JSON directly
+		Raw:        protocolResult.Raw, // ALL protocol-specific data
 		QueriedAt:  startTime,
 	}
 

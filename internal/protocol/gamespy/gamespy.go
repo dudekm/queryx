@@ -59,18 +59,7 @@ func (p *Protocol) Query(ctx context.Context, addr string) (*protocol.QueryResul
 		Version:    getString(data, "gamever"),
 		Password:   getInt(data, "password") == 1,
 		Ping:       ping,
-		Extra:      make(map[string]interface{}),
-	}
-
-	// Add extra information from GameSpy response
-	if gameType := getString(data, "gametype"); gameType != "" {
-		result.Extra["gametype"] = gameType
-	}
-	if hostport := getString(data, "hostport"); hostport != "" {
-		result.Extra["hostport"] = hostport
-	}
-	if gameID := getString(data, "gameid"); gameID != "" {
-		result.Extra["gameid"] = gameID
+		Raw:        data, // ALL key-value pairs from GameSpy response
 	}
 
 	return result, nil

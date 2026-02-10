@@ -80,8 +80,12 @@ func TestProtocol_Query_Success(t *testing.T) {
 	assert.Equal(t, 10, result.NumPlayers)
 	assert.Equal(t, 32, result.MaxPlayers)
 	assert.Equal(t, "2026.01.22", result.Version)
-	assert.Equal(t, "Welcome to our server!", result.Extra["motd"])
-	assert.Equal(t, uint32(5520), result.Extra["port"])
+
+	// Check Raw contains protocol-specific data
+	rawMap, ok := result.Raw.(map[string]interface{})
+	assert.True(t, ok, "Raw should be a map")
+	assert.Equal(t, "Welcome to our server!", rawMap["motd"])
+	assert.Equal(t, uint32(5520), rawMap["port"])
 }
 
 func TestProtocol_Query_FullResponse(t *testing.T) {
@@ -112,7 +116,11 @@ func TestProtocol_Query_FullResponse(t *testing.T) {
 	assert.Equal(t, "Player2", result.Players[1].Name)
 	assert.Equal(t, "Player3", result.Players[2].Name)
 
-	plugins, ok := result.Extra["plugins"].([]string)
+	// Check Raw contains protocol-specific data
+	rawMap, ok := result.Raw.(map[string]interface{})
+	assert.True(t, ok, "Raw should be a map")
+
+	plugins, ok := rawMap["plugins"].([]string)
 	assert.True(t, ok)
 	assert.Equal(t, 2, len(plugins))
 	assert.Equal(t, "HyQuery", plugins[0])

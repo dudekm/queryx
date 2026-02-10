@@ -78,8 +78,12 @@ func TestProtocol_Query_Success(t *testing.T) {
 	assert.Equal(t, "v1.0.0.5555 win32", result.Version)
 	assert.Equal(t, 3, len(result.Players))
 	assert.Equal(t, "Player1", result.Players[0].Name)
+
+	// Check Raw contains full CFX.re response
 	assert.NotNil(t, result.Raw)
-	assert.Equal(t, "roleplay,economy", result.Extra["tags"])
+	rawInfo, ok := result.Raw.(*InfoResponse)
+	assert.True(t, ok, "Raw should be *InfoResponse")
+	assert.Equal(t, "roleplay,economy", rawInfo.Vars.Tags)
 }
 
 func TestProtocol_Query_WithHTTPPrefix(t *testing.T) {

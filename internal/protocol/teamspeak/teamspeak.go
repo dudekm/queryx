@@ -146,6 +146,24 @@ func parseServerInfo(line string) (*protocol.QueryResult, error) {
 		actualClients = clientsOnline
 	}
 
+	// Build raw data with all TeamSpeak-specific fields
+	rawData := make(map[string]interface{})
+	if platform := data["virtualserver_platform"]; platform != "" {
+		rawData["platform"] = platform
+	}
+	if uptime := data["virtualserver_uptime"]; uptime != "" {
+		rawData["uptime"] = uptime
+	}
+	if created := data["virtualserver_created"]; created != "" {
+		rawData["created"] = created
+	}
+	if codec := data["virtualserver_codec_encryption_mode"]; codec != "" {
+		rawData["codec_encryption"] = codec
+	}
+	if channels := data["virtualserver_channelsonline"]; channels != "" {
+		rawData["channels_online"] = parseInt(channels)
+	}
+
 	result := &protocol.QueryResult{
 		Online:     true,
 		Name:       serverName,
@@ -153,24 +171,7 @@ func parseServerInfo(line string) (*protocol.QueryResult, error) {
 		MaxPlayers: maxClients,
 		Version:    data["virtualserver_version"],
 		Password:   data["virtualserver_flag_password"] == "1",
-		Extra:      make(map[string]interface{}),
-	}
-
-	// Add extra information
-	if platform := data["virtualserver_platform"]; platform != "" {
-		result.Extra["platform"] = platform
-	}
-	if uptime := data["virtualserver_uptime"]; uptime != "" {
-		result.Extra["uptime"] = uptime
-	}
-	if created := data["virtualserver_created"]; created != "" {
-		result.Extra["created"] = created
-	}
-	if codec := data["virtualserver_codec_encryption_mode"]; codec != "" {
-		result.Extra["codec_encryption"] = codec
-	}
-	if channels := data["virtualserver_channelsonline"]; channels != "" {
-		result.Extra["channels_online"] = parseInt(channels)
+		Raw:        rawData,
 	}
 
 	return result, nil

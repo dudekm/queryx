@@ -91,8 +91,9 @@ func TestProtocol_ConvertToQueryResult(t *testing.T) {
 	assert.Len(t, result.Players, 2)
 	assert.Equal(t, "Player1", result.Players[0].Name)
 	assert.Equal(t, "Player2", result.Players[1].Name)
-	assert.Equal(t, 763, result.Extra["protocol"])
-	assert.Equal(t, "data:image/png;base64,abc123", result.Extra["favicon"])
+
+	// Note: Raw field is set in parseResponse(), not in convertToQueryResult()
+	// This test only validates the standard field mapping
 }
 
 func TestProtocol_Query_Success(t *testing.T) {

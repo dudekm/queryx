@@ -143,20 +143,10 @@ func printFormatted(result *queryx.QueryResult, debug bool) {
 		}
 	}
 
-	// Show extra information
-	if len(result.Extra) > 0 {
-		fmt.Printf("\n  Extra info:\n")
-		for key, value := range result.Extra {
-			if key != "favicon" { // Skip base64 favicon
-				fmt.Printf("    %s: %v\n", key, value)
-			}
-		}
-	}
-
-	// Show raw data info
+	// Show protocol-specific data (Raw)
 	if result.Raw != nil {
-		fmt.Printf("\n  Raw data:\n")
-		fmt.Printf("    JSON:       available (use -json to see)\n")
+		fmt.Printf("\n  Protocol-specific data:\n")
+		fmt.Printf("    Available in Raw field (use -json to see full data)\n")
 	}
 
 	fmt.Printf("\n  Queried at:   %s\n", result.QueriedAt.Format("2006-01-02 15:04:05"))

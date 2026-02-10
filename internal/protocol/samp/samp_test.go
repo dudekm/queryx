@@ -61,8 +61,12 @@ func TestParseInfoResponse(t *testing.T) {
 	assert.Equal(t, 50, result.NumPlayers)
 	assert.Equal(t, 100, result.MaxPlayers)
 	assert.False(t, result.Password)
-	assert.Equal(t, "English", result.Extra["language"])
-	assert.Equal(t, "Roleplay", result.Extra["gamemode"])
+
+	// Check Raw contains protocol-specific data
+	rawMap, ok := result.Raw.(map[string]interface{})
+	assert.True(t, ok, "Raw should be a map")
+	assert.Equal(t, "English", rawMap["language"])
+	assert.Equal(t, "Roleplay", rawMap["gamemode"])
 }
 
 func TestParseInfoResponse_WithPassword(t *testing.T) {

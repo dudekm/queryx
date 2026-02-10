@@ -35,9 +35,13 @@ func TestParseServerInfo(t *testing.T) {
 	assert.Equal(t, 32, result.MaxPlayers)
 	assert.Equal(t, "3.13.7", result.Version)
 	assert.False(t, result.Password)
-	assert.Equal(t, "Linux", result.Extra["platform"])
-	assert.Equal(t, "123456", result.Extra["uptime"])
-	assert.Equal(t, 5, result.Extra["channels_online"])
+
+	// Check Raw contains protocol-specific data
+	rawMap, ok := result.Raw.(map[string]interface{})
+	assert.True(t, ok, "Raw should be a map")
+	assert.Equal(t, "Linux", rawMap["platform"])
+	assert.Equal(t, "123456", rawMap["uptime"])
+	assert.Equal(t, 5, rawMap["channels_online"])
 }
 
 func TestParseServerInfo_WithPassword(t *testing.T) {
@@ -174,11 +178,15 @@ func TestParseServerInfo_AllExtraFields(t *testing.T) {
 
 	assert.NoError(t, err)
 	assert.Equal(t, "Full Server", result.Name)
-	assert.Equal(t, "Windows", result.Extra["platform"])
-	assert.Equal(t, "987654", result.Extra["uptime"])
-	assert.Equal(t, "1234567890", result.Extra["created"])
-	assert.Equal(t, "1", result.Extra["codec_encryption"])
-	assert.Equal(t, 8, result.Extra["channels_online"])
+
+	// Check Raw contains protocol-specific data
+	rawMap, ok := result.Raw.(map[string]interface{})
+	assert.True(t, ok, "Raw should be a map")
+	assert.Equal(t, "Windows", rawMap["platform"])
+	assert.Equal(t, "987654", rawMap["uptime"])
+	assert.Equal(t, "1234567890", rawMap["created"])
+	assert.Equal(t, "1", rawMap["codec_encryption"])
+	assert.Equal(t, 8, rawMap["channels_online"])
 }
 
 func TestParseServerInfo_MinimalResponse(t *testing.T) {

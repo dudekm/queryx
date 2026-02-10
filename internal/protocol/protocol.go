@@ -18,10 +18,9 @@ type QueryResult struct {
 	Type       string   // Server type (minecraft, cs2, etc.)
 	Version    string   // Server version
 	Ping       time.Duration
-	Connect    string // Connection string (host:port)
-	Password   bool   // Whether server requires password
-	Extra      map[string]interface{}
-	Raw        interface{} // Raw server response as parsed JSON (for protocols that support it)
+	Connect    string      // Connection string (host:port)
+	Password   bool        // Whether server requires password
+	Raw        interface{} // ALL protocol-specific data (full response, game tags, mods, etc.)
 	QueriedAt  time.Time
 }
 

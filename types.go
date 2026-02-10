@@ -102,21 +102,20 @@ type QueryInput struct {
 
 // QueryResult contains the parsed response from a server
 type QueryResult struct {
-	Online     bool                   `json:"online"`
-	Name       string                 `json:"name"`
-	Map        string                 `json:"map,omitempty"`
-	NumPlayers int                    `json:"numPlayers"`        // Current number of players online
-	MaxPlayers int                    `json:"maxPlayers"`        // Maximum number of players
-	Players    []Player               `json:"players,omitempty"` // Detailed list of players (if available)
-	Bots       int                    `json:"bots,omitempty"`    // Number of bots
-	Type       string                 `json:"type"`              // Server type (minecraft, cs2, etc.)
-	Version    string                 `json:"version,omitempty"` // Server version
-	Ping       time.Duration          `json:"ping"`
-	Connect    string                 `json:"connect,omitempty"`  // Connection string (host:port)
-	Password   bool                   `json:"password,omitempty"` // Whether server requires password
-	Extra      map[string]interface{} `json:"extra,omitempty"`
-	Raw        interface{}            `json:"raw,omitempty"` // Raw server response as parsed JSON (for protocols that support it)
-	QueriedAt  time.Time              `json:"queriedAt"`
+	Online     bool          `json:"online"`
+	Name       string        `json:"name"`
+	Map        string        `json:"map,omitempty"`
+	NumPlayers int           `json:"numPlayers"`        // Current number of players online
+	MaxPlayers int           `json:"maxPlayers"`        // Maximum number of players
+	Players    []Player      `json:"players,omitempty"` // Detailed list of players (if available)
+	Bots       int           `json:"bots,omitempty"`    // Number of bots
+	Type       string        `json:"type"`              // Server type (minecraft, cs2, etc.)
+	Version    string        `json:"version,omitempty"` // Server version
+	Ping       time.Duration `json:"ping"`
+	Connect    string        `json:"connect,omitempty"`  // Connection string (host:port)
+	Password   bool          `json:"password,omitempty"` // Whether server requires password
+	Raw        interface{}   `json:"raw,omitempty"`      // ALL protocol-specific data (full response, game tags, mods, etc.)
+	QueriedAt  time.Time     `json:"queriedAt"`
 }
 
 // Player represents a single player on the server

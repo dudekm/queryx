@@ -110,25 +110,7 @@ func (p *Protocol) Query(ctx context.Context, addr string) (*protocol.QueryResul
 		MaxPlayers: maxPlayers,
 		Version:    info.Server,
 		Ping:       ping,
-		Extra:      make(map[string]interface{}),
-		Raw:        info,
-	}
-
-	// Add extra information
-	if info.Vars.SvProjectName != "" {
-		result.Extra["projectName"] = info.Vars.SvProjectName
-	}
-	if info.Vars.SvProjectDesc != "" {
-		result.Extra["projectDesc"] = info.Vars.SvProjectDesc
-	}
-	if info.Vars.Tags != "" {
-		result.Extra["tags"] = info.Vars.Tags
-	}
-	if info.Vars.GameName != "" {
-		result.Extra["gameName"] = info.Vars.GameName
-	}
-	if info.Vars.GameType != "" {
-		result.Extra["gameType"] = info.Vars.GameType
+		Raw:        &info, // Full CFX.re response (includes projectName, projectDesc, tags, gameName, gameType, etc.)
 	}
 
 	// Convert players to protocol.Player format

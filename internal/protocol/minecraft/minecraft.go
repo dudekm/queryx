@@ -214,10 +214,10 @@ func (p *Protocol) parseResponse(data []byte) (*protocol.QueryResult, error) {
 	// Convert to QueryResult
 	result := p.convertToQueryResult(&response)
 
-	// Parse as generic map for Raw field
+	// Parse as generic map for Raw field - ALL protocol-specific data goes here
 	var rawParsed map[string]interface{}
 	json.Unmarshal(jsonData, &rawParsed)
-	result.Raw = rawParsed
+	result.Raw = rawParsed // Full Minecraft JSON response (includes favicon, protocol version, etc.)
 
 	return result, nil
 }
@@ -232,7 +232,6 @@ func (p *Protocol) convertToQueryResult(resp *serverResponse) *protocol.QueryRes
 		Bots:       0, // Minecraft servers don't have bots
 		Version:    resp.Version.Name,
 		Password:   false, // Minecraft Java doesn't expose password info via query
-		Extra:      make(map[string]interface{}),
 	}
 
 	// Add player list if available
@@ -245,11 +244,8 @@ func (p *Protocol) convertToQueryResult(resp *serverResponse) *protocol.QueryRes
 		}
 	}
 
-	// Add extra information
-	result.Extra["protocol"] = resp.Version.Protocol
-	if resp.Favicon != "" {
-		result.Extra["favicon"] = resp.Favicon
-	}
+	// Note: All protocol-specific data (protocol version, favicon, full JSON)
+	// is added to Raw field in parseResponse(), not here
 
 	return result
 }
