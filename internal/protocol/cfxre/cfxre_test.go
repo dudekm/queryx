@@ -81,8 +81,10 @@ func TestProtocol_Query_Success(t *testing.T) {
 
 	// Check Raw contains full CFX.re response
 	assert.NotNil(t, result.Raw)
-	rawInfo, ok := result.Raw.(*InfoResponse)
-	assert.True(t, ok, "Raw should be *InfoResponse")
+	rawMap, ok := result.Raw.(map[string]interface{})
+	assert.True(t, ok, "Raw should be a map")
+	rawInfo, ok := rawMap["info"].(InfoResponse)
+	assert.True(t, ok, "Raw should contain info")
 	assert.Equal(t, "roleplay,economy", rawInfo.Vars.Tags)
 }
 

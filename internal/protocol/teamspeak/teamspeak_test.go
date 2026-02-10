@@ -39,9 +39,9 @@ func TestParseServerInfo(t *testing.T) {
 	// Check Raw contains protocol-specific data
 	rawMap, ok := result.Raw.(map[string]interface{})
 	assert.True(t, ok, "Raw should be a map")
-	assert.Equal(t, "Linux", rawMap["platform"])
-	assert.Equal(t, 123456, rawMap["uptime"]) // Now converted to int
-	assert.Equal(t, 5, rawMap["channels_online"])
+	assert.Equal(t, "Linux", rawMap["virtualserver_platform"])
+	assert.Equal(t, 123456, rawMap["virtualserver_uptime"]) // Now converted to int
+	assert.Equal(t, 5, rawMap["virtualserver_channelsonline"])
 }
 
 func TestParseServerInfo_WithPassword(t *testing.T) {

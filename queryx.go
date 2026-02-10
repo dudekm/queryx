@@ -172,39 +172,17 @@ func (c *Client) Query(ctx context.Context, gameType GameType, host string, port
 		return nil, NewQueryError(gameType, host, err)
 	}
 
-	// Convert protocol.QueryResult to queryx.QueryResult
-	result := &QueryResult{
-		Online:     protocolResult.Online,
-		Name:       protocolResult.Name,
-		Map:        protocolResult.Map,
-		NumPlayers: protocolResult.NumPlayers,
-		MaxPlayers: protocolResult.MaxPlayers,
-		Bots:       protocolResult.Bots,
-		Type:       string(gameType),
-		Version:    protocolResult.Version,
-		Ping:       protocolResult.Ping, // Network latency from protocol
-		Connect:    protocolResult.Connect,
-		Password:   protocolResult.Password,
-		Players:    make([]Player, len(protocolResult.Players)),
-		Raw:        protocolResult.Raw, // ALL protocol-specific data
-	}
-
-	// Convert players
-	for i, p := range protocolResult.Players {
-		result.Players[i] = Player{
-			Name:     p.Name,
-			Score:    p.Score,
-			Duration: p.Duration,
-		}
-	}
+	// Use domain model directly (no conversion needed - SOLID/DDD pattern)
+	// Just set the Type field for the application layer
+	protocolResult.Type = string(gameType)
 
 	c.logger.Info("Query successful",
 		F("address", addr.String()),
-		F("ping", result.Ping),
-		F("online", result.Online),
+		F("ping", protocolResult.Ping),
+		F("online", protocolResult.Online),
 	)
 
-	return result, nil
+	return protocolResult, nil
 }
 
 // QueryWithOptions queries a game server using QueryInput options

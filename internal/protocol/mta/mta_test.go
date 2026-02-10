@@ -55,8 +55,8 @@ func TestParseASEResponse_EYE1(t *testing.T) {
 	assert.Equal(t, "Race", info.GameMode)
 	assert.Equal(t, "Test MTA Server", info.ServerName)
 	assert.Equal(t, "mta", info.GameType)
-	assert.Equal(t, "test_map", info.Map)
-	assert.Equal(t, 10, info.NumPlayers)
+	assert.Equal(t, "race-dusty", info.Map)
+	assert.Equal(t, 25, info.NumPlayers)
 	assert.Equal(t, 32, info.MaxPlayers)
 }
 

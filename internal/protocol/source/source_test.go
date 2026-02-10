@@ -78,7 +78,7 @@ func TestProtocol_Query_Success(t *testing.T) {
 	info, ok := result.Raw.(*SourceInfo)
 	assert.True(t, ok, "Raw should be SourceInfo struct")
 	assert.Equal(t, "Counter-Strike 2", info.Game)
-	assert.Equal(t, "Test Server", info.ServerName)
+	assert.Equal(t, "Test CS2 Server", info.ServerName)
 	assert.Equal(t, "de_dust2", info.Map)
 }
 
@@ -418,7 +418,7 @@ func TestProtocol_Query_GoldSrc(t *testing.T) {
 	assert.Equal(t, "Counter-Strike", info.Game)
 	assert.Equal(t, "valve", info.GameDir)
 	assert.Equal(t, "GoldSrc", info.Engine)
-	assert.Equal(t, "CS 1.6 Server", info.ServerName)
+	assert.Equal(t, "Test CS 1.6 Server", info.ServerName)
 }
 
 // TestProtocol_Query_GoldSrc_WithPassword tests GoldSrc password-protected servers
