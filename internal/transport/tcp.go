@@ -58,7 +58,9 @@ func (t *TCPTransport) SendTCP(ctx context.Context, addr string, data []byte) ([
 	for {
 		// After first read, set a short read timeout to detect end of data
 		if !firstRead {
-			conn.SetReadDeadline(time.Now().Add(200 * time.Millisecond))
+			if err := conn.SetReadDeadline(time.Now().Add(200 * time.Millisecond)); err != nil {
+				return nil, fmt.Errorf("failed to set read deadline: %w", err)
+			}
 		}
 
 		n, err := conn.Read(buffer)

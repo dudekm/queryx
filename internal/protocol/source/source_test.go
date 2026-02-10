@@ -115,9 +115,9 @@ func TestProtocol_Query_WithChallenge(t *testing.T) {
 
 	// Build challenge response
 	challengeBuf := &bytes.Buffer{}
-	binary.Write(challengeBuf, binary.LittleEndian, int32(headerMagic))
+	_ = binary.Write(challengeBuf, binary.LittleEndian, int32(headerMagic))
 	challengeBuf.WriteByte(a2sChallenge)
-	binary.Write(challengeBuf, binary.LittleEndian, int32(12345)) // Challenge number
+	_ = binary.Write(challengeBuf, binary.LittleEndian, int32(12345)) // Challenge number
 
 	// Build final response
 	finalResponse := buildMockA2SInfoResponse(
@@ -166,7 +166,7 @@ func TestProtocol_ParseResponse_InvalidPacketType(t *testing.T) {
 	p := NewProtocol(nil, "CS2")
 
 	buf := &bytes.Buffer{}
-	binary.Write(buf, binary.LittleEndian, int32(headerMagic))
+	_ = binary.Write(buf, binary.LittleEndian, int32(headerMagic))
 	buf.WriteByte(0xFF) // Invalid packet type
 
 	result, err := p.parseA2SInfoResponse(buf.Bytes())
@@ -331,7 +331,7 @@ func buildMockA2SInfoResponse(serverName, mapName, game string, players, maxPlay
 	buf := &bytes.Buffer{}
 
 	// Magic header
-	binary.Write(buf, binary.LittleEndian, int32(headerMagic))
+	_ = binary.Write(buf, binary.LittleEndian, int32(headerMagic))
 
 	// Packet type
 	buf.WriteByte(a2sInfoResponse)
@@ -356,7 +356,7 @@ func buildMockA2SInfoResponse(serverName, mapName, game string, players, maxPlay
 	buf.WriteByte(0x00)
 
 	// Game ID
-	binary.Write(buf, binary.LittleEndian, uint16(730))
+	_ = binary.Write(buf, binary.LittleEndian, uint16(730))
 
 	// Players
 	buf.WriteByte(players)
@@ -427,7 +427,7 @@ func TestProtocol_Query_GoldSrc_WithPassword(t *testing.T) {
 
 	// Build mock GoldSrc response with password
 	buf := &bytes.Buffer{}
-	binary.Write(buf, binary.LittleEndian, int32(headerMagic))
+	_ = binary.Write(buf, binary.LittleEndian, int32(headerMagic))
 	buf.WriteByte(goldsrcInfoResponse)
 
 	// Server address
@@ -483,7 +483,7 @@ func buildMockGoldSrcResponse(serverName, mapName, gameDir, gameDesc string, pla
 	buf := &bytes.Buffer{}
 
 	// Magic header
-	binary.Write(buf, binary.LittleEndian, int32(headerMagic))
+	_ = binary.Write(buf, binary.LittleEndian, int32(headerMagic))
 
 	// Packet type (GoldSrc)
 	buf.WriteByte(goldsrcInfoResponse)

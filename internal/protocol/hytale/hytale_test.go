@@ -244,7 +244,7 @@ func TestParsePlayers(t *testing.T) {
 	buf := &bytes.Buffer{}
 
 	// Player count: 2
-	binary.Write(buf, binary.LittleEndian, uint32(2))
+	_ = binary.Write(buf, binary.LittleEndian, uint32(2))
 
 	// Player 1: "Alice" + UUID (16 bytes)
 	writeString(buf, "Alice")
@@ -267,7 +267,7 @@ func TestParsePlugins(t *testing.T) {
 	buf := &bytes.Buffer{}
 
 	// Plugin count: 3
-	binary.Write(buf, binary.LittleEndian, uint32(3))
+	_ = binary.Write(buf, binary.LittleEndian, uint32(3))
 
 	// Plugins
 	writeString(buf, "HyQuery")
@@ -301,13 +301,13 @@ func buildMockBasicResponse(serverName, motd string, online, max, port uint32, v
 	writeString(buf, motd)
 
 	// Online players
-	binary.Write(buf, binary.LittleEndian, online)
+	_ = binary.Write(buf, binary.LittleEndian, online)
 
 	// Max players
-	binary.Write(buf, binary.LittleEndian, max)
+	_ = binary.Write(buf, binary.LittleEndian, max)
 
 	// Port
-	binary.Write(buf, binary.LittleEndian, port)
+	_ = binary.Write(buf, binary.LittleEndian, port)
 
 	// Version
 	writeString(buf, version)
@@ -331,26 +331,26 @@ func buildMockFullResponse(serverName, motd string, online, max, port uint32, ve
 	writeString(buf, motd)
 
 	// Online players
-	binary.Write(buf, binary.LittleEndian, online)
+	_ = binary.Write(buf, binary.LittleEndian, online)
 
 	// Max players
-	binary.Write(buf, binary.LittleEndian, max)
+	_ = binary.Write(buf, binary.LittleEndian, max)
 
 	// Port
-	binary.Write(buf, binary.LittleEndian, port)
+	_ = binary.Write(buf, binary.LittleEndian, port)
 
 	// Version
 	writeString(buf, version)
 
 	// Players
-	binary.Write(buf, binary.LittleEndian, uint32(len(players)))
+	_ = binary.Write(buf, binary.LittleEndian, uint32(len(players)))
 	for _, player := range players {
 		writeString(buf, player)
 		buf.Write(make([]byte, 16)) // UUID placeholder
 	}
 
 	// Plugins
-	binary.Write(buf, binary.LittleEndian, uint32(len(plugins)))
+	_ = binary.Write(buf, binary.LittleEndian, uint32(len(plugins)))
 	for _, plugin := range plugins {
 		writeString(buf, plugin)
 	}
@@ -359,6 +359,6 @@ func buildMockFullResponse(serverName, motd string, online, max, port uint32, ve
 }
 
 func writeString(buf *bytes.Buffer, s string) {
-	binary.Write(buf, binary.LittleEndian, uint16(len(s)))
+	_ = binary.Write(buf, binary.LittleEndian, uint16(len(s)))
 	buf.WriteString(s)
 }

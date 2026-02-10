@@ -52,9 +52,13 @@ func (p *Protocol) Query(ctx context.Context, addr string) (*protocol.QueryResul
 	// Set read deadline
 	deadline, ok := ctx.Deadline()
 	if ok {
-		conn.SetDeadline(deadline)
+		if err := conn.SetDeadline(deadline); err != nil {
+			return nil, fmt.Errorf("failed to set deadline: %w", err)
+		}
 	} else {
-		conn.SetDeadline(time.Now().Add(10 * time.Second))
+		if err := conn.SetDeadline(time.Now().Add(10 * time.Second)); err != nil {
+			return nil, fmt.Errorf("failed to set deadline: %w", err)
+		}
 	}
 
 	reader := bufio.NewReader(conn)
@@ -105,8 +109,8 @@ func (p *Protocol) Query(ctx context.Context, addr string) (*protocol.QueryResul
 
 	result.Ping = pingMs
 
-	// Send quit command
-	conn.Write([]byte("quit\n"))
+	// Send quit command (ignore error as we're done with the connection)
+	_, _ = conn.Write([]byte("quit\n"))
 
 	return result, nil
 }

@@ -132,7 +132,8 @@ func (p *Protocol) buildA2SInfoRequestWithChallenge(challenge int32) []byte {
 	buf := &bytes.Buffer{}
 
 	// Write magic header (0xFFFFFFFF)
-	binary.Write(buf, binary.LittleEndian, int32(headerMagic))
+	// bytes.Buffer.Write never returns an error, safe to ignore
+	_ = binary.Write(buf, binary.LittleEndian, int32(headerMagic))
 
 	// Write packet type (0x54 = 'T')
 	buf.WriteByte(a2sInfoRequest)
@@ -142,7 +143,7 @@ func (p *Protocol) buildA2SInfoRequestWithChallenge(challenge int32) []byte {
 	buf.WriteByte(0x00)
 
 	// Write challenge (4 bytes)
-	binary.Write(buf, binary.LittleEndian, challenge)
+	_ = binary.Write(buf, binary.LittleEndian, challenge)
 
 	return buf.Bytes()
 }

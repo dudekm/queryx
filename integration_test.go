@@ -73,7 +73,7 @@ func buildSourceEngineResponse(name, mapName, game, version string, players, max
 	buf := &bytes.Buffer{}
 
 	// Magic header
-	binary.Write(buf, binary.LittleEndian, int32(-1))
+	_ = binary.Write(buf, binary.LittleEndian, int32(-1))
 
 	// Packet type (A2S_INFO = 0x49)
 	buf.WriteByte(0x49)
@@ -98,7 +98,7 @@ func buildSourceEngineResponse(name, mapName, game, version string, players, max
 	buf.WriteByte(0x00)
 
 	// Game ID (uint16)
-	binary.Write(buf, binary.LittleEndian, uint16(730))
+	_ = binary.Write(buf, binary.LittleEndian, uint16(730))
 
 	// Players
 	buf.WriteByte(players)
@@ -219,9 +219,9 @@ func TestIntegration_CounterStrike_FullFlow(t *testing.T) {
 func TestIntegration_CounterStrike_WithChallenge(t *testing.T) {
 	// Challenge response
 	challengeBuf := &bytes.Buffer{}
-	binary.Write(challengeBuf, binary.LittleEndian, int32(-1))
-	challengeBuf.WriteByte(0x41)                                  // Challenge type
-	binary.Write(challengeBuf, binary.LittleEndian, int32(12345)) // Challenge number
+	_ = binary.Write(challengeBuf, binary.LittleEndian, int32(-1))
+	challengeBuf.WriteByte(0x41)                                      // Challenge type
+	_ = binary.Write(challengeBuf, binary.LittleEndian, int32(12345)) // Challenge number
 
 	// Final response after challenge
 	finalResponse := buildSourceEngineResponse(
