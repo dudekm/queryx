@@ -75,9 +75,11 @@ func TestProtocol_Query_Success(t *testing.T) {
 	assert.NotNil(t, result.Raw) // Raw now contains all server data
 
 	// Check Raw data
-	rawData, ok := result.Raw.(map[string]interface{})
-	assert.True(t, ok)
-	assert.Equal(t, "Counter-Strike 2", rawData["game"])
+	info, ok := result.Raw.(*SourceInfo)
+	assert.True(t, ok, "Raw should be SourceInfo struct")
+	assert.Equal(t, "Counter-Strike 2", info.Game)
+	assert.Equal(t, "Test Server", info.ServerName)
+	assert.Equal(t, "de_dust2", info.Map)
 }
 
 func TestProtocol_Query_TransportError(t *testing.T) {
@@ -411,11 +413,12 @@ func TestProtocol_Query_GoldSrc(t *testing.T) {
 	assert.Equal(t, 0, result.Bots) // GoldSrc doesn't report bots
 
 	// Check Raw data
-	rawData, ok := result.Raw.(map[string]interface{})
-	assert.True(t, ok)
-	assert.Equal(t, "Counter-Strike", rawData["game"])
-	assert.Equal(t, "valve", rawData["gameDir"])
-	assert.Equal(t, "GoldSrc", rawData["engine"])
+	info, ok := result.Raw.(*GoldSrcInfo)
+	assert.True(t, ok, "Raw should be GoldSrcInfo struct")
+	assert.Equal(t, "Counter-Strike", info.Game)
+	assert.Equal(t, "valve", info.GameDir)
+	assert.Equal(t, "GoldSrc", info.Engine)
+	assert.Equal(t, "CS 1.6 Server", info.ServerName)
 }
 
 // TestProtocol_Query_GoldSrc_WithPassword tests GoldSrc password-protected servers

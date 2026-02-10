@@ -40,7 +40,7 @@ func TestParseServerInfo(t *testing.T) {
 	rawMap, ok := result.Raw.(map[string]interface{})
 	assert.True(t, ok, "Raw should be a map")
 	assert.Equal(t, "Linux", rawMap["platform"])
-	assert.Equal(t, "123456", rawMap["uptime"])
+	assert.Equal(t, 123456, rawMap["uptime"]) // Now converted to int
 	assert.Equal(t, 5, rawMap["channels_online"])
 }
 
@@ -183,9 +183,9 @@ func TestParseServerInfo_AllExtraFields(t *testing.T) {
 	rawMap, ok := result.Raw.(map[string]interface{})
 	assert.True(t, ok, "Raw should be a map")
 	assert.Equal(t, "Windows", rawMap["platform"])
-	assert.Equal(t, "987654", rawMap["uptime"])
-	assert.Equal(t, "1234567890", rawMap["created"])
-	assert.Equal(t, "1", rawMap["codec_encryption"])
+	assert.Equal(t, 987654, rawMap["uptime"])      // Now converted to int
+	assert.Equal(t, 1234567890, rawMap["created"]) // Now converted to int
+	assert.Equal(t, 1, rawMap["codec_encryption"]) // Now converted to int
 	assert.Equal(t, 8, rawMap["channels_online"])
 }
 

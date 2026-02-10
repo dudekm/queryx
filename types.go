@@ -115,7 +115,6 @@ type QueryResult struct {
 	Connect    string        `json:"connect,omitempty"`  // Connection string (host:port)
 	Password   bool          `json:"password,omitempty"` // Whether server requires password
 	Raw        interface{}   `json:"raw,omitempty"`      // ALL protocol-specific data (full response, game tags, mods, etc.)
-	QueriedAt  time.Time     `json:"queriedAt"`
 }
 
 // Player represents a single player on the server

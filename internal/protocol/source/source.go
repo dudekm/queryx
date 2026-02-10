@@ -28,6 +28,41 @@ const (
 	defaultPort = 27015
 )
 
+// SourceInfo contains all data from Source Engine A2S_INFO response
+type SourceInfo struct {
+	Protocol    byte   `json:"protocol"`
+	ServerName  string `json:"serverName"`
+	Map         string `json:"map"`
+	Folder      string `json:"folder"`
+	Game        string `json:"game"`
+	GameID      uint16 `json:"gameID"`
+	Players     byte   `json:"players"`
+	MaxPlayers  byte   `json:"maxPlayers"`
+	Bots        byte   `json:"bots"`
+	ServerType  string `json:"serverType"`
+	Environment string `json:"environment"`
+	Visibility  bool   `json:"visibility"` // true = public, false = private
+	VAC         bool   `json:"vac"`
+	Version     string `json:"version"`
+}
+
+// GoldSrcInfo contains all data from GoldSrc (Half-Life 1) info response
+type GoldSrcInfo struct {
+	Protocol    byte   `json:"protocol"`
+	ServerName  string `json:"serverName"`
+	Map         string `json:"map"`
+	GameDir     string `json:"gameDir"`
+	Game        string `json:"game"`
+	Players     byte   `json:"players"`
+	MaxPlayers  byte   `json:"maxPlayers"`
+	ServerType  string `json:"serverType"`
+	Environment string `json:"environment"`
+	Visibility  byte   `json:"visibility"` // 0 = public, 1 = private
+	Password    bool   `json:"password"`
+	Mod         bool   `json:"mod"`
+	Engine      string `json:"engine"` // "GoldSrc"
+}
+
 // Protocol implements Source Engine Query Protocol (A2S)
 // Used by CS 1.6, CS:Source, CS2, TF2, Garry's Mod, etc.
 type Protocol struct {
@@ -219,6 +254,24 @@ func (p *Protocol) parseA2SInfoResponse(data []byte) (*protocol.QueryResult, err
 		return nil, fmt.Errorf("failed to read version: %w", err)
 	}
 
+	// Build info struct with ALL parsed data
+	info := &SourceInfo{
+		Protocol:    protocolVersion,
+		ServerName:  serverName,
+		Map:         mapName,
+		Folder:      folder,
+		Game:        game,
+		GameID:      gameID,
+		Players:     players,
+		MaxPlayers:  maxPlayers,
+		Bots:        bots,
+		ServerType:  string(serverType),
+		Environment: string(environment),
+		Visibility:  visibility == 0, // true = public
+		VAC:         vac == 1,
+		Version:     version,
+	}
+
 	// Build result
 	result := &protocol.QueryResult{
 		Online:     true,
@@ -229,18 +282,7 @@ func (p *Protocol) parseA2SInfoResponse(data []byte) (*protocol.QueryResult, err
 		Bots:       int(bots),
 		Version:    version,
 		Password:   visibility != 0, // visibility 0 = public, 1 = private/password
-	}
-
-	// Put ALL server data in Raw
-	result.Raw = map[string]interface{}{
-		"protocol":    protocolVersion,
-		"game":        game,
-		"folder":      folder,
-		"gameID":      gameID,
-		"serverType":  string(serverType),
-		"environment": string(environment),
-		"visibility":  visibility == 0,
-		"vac":         vac == 1,
+		Raw:        info,            // ALL data in single struct
 	}
 
 	return result, nil
@@ -323,6 +365,23 @@ func (p *Protocol) parseGoldSrcResponse(reader *bytes.Reader) (*protocol.QueryRe
 	// If it's a mod (modFlag == 1), there are additional fields we can skip
 	// For simplicity, we'll just skip to the end
 
+	// Build info struct with ALL parsed data
+	info := &GoldSrcInfo{
+		Protocol:    protocolVersion,
+		ServerName:  serverName,
+		Map:         mapName,
+		GameDir:     gameDir,
+		Game:        gameDesc,
+		Players:     players,
+		MaxPlayers:  maxPlayers,
+		ServerType:  string(serverType),
+		Environment: string(environment),
+		Visibility:  visibility,
+		Password:    visibility == 1,
+		Mod:         modFlag == 1,
+		Engine:      "GoldSrc",
+	}
+
 	// Build result
 	result := &protocol.QueryResult{
 		Online:     true,
@@ -333,17 +392,7 @@ func (p *Protocol) parseGoldSrcResponse(reader *bytes.Reader) (*protocol.QueryRe
 		Bots:       0,  // GoldSrc doesn't report bots separately
 		Version:    "", // GoldSrc doesn't include version in basic query
 		Password:   visibility == 1,
-	}
-
-	// Put ALL server data in Raw
-	result.Raw = map[string]interface{}{
-		"protocol":    protocolVersion,
-		"game":        gameDesc,
-		"gameDir":     gameDir,
-		"serverType":  string(serverType),
-		"environment": string(environment),
-		"mod":         modFlag == 1,
-		"engine":      "GoldSrc", // Our addition to identify protocol type
+		Raw:        info, // ALL data in single struct
 	}
 
 	return result, nil

@@ -82,10 +82,14 @@ func TestProtocol_Query_Success(t *testing.T) {
 	assert.Equal(t, "2026.01.22", result.Version)
 
 	// Check Raw contains protocol-specific data
-	rawMap, ok := result.Raw.(map[string]interface{})
-	assert.True(t, ok, "Raw should be a map")
-	assert.Equal(t, "Welcome to our server!", rawMap["motd"])
-	assert.Equal(t, uint32(5520), rawMap["port"])
+	info, ok := result.Raw.(*HytaleInfo)
+	assert.True(t, ok, "Raw should be HytaleInfo struct")
+	assert.Equal(t, "Welcome to our server!", info.MOTD)
+	assert.Equal(t, uint32(5520), info.Port)
+	assert.Equal(t, "Hytale Test Server", info.ServerName)
+	assert.Equal(t, uint32(10), info.OnlinePlayers)
+	assert.Equal(t, uint32(32), info.MaxPlayers)
+	assert.Equal(t, "2026.01.22", info.Version)
 }
 
 func TestProtocol_Query_FullResponse(t *testing.T) {

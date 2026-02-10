@@ -144,22 +144,15 @@ func parseServerInfo(line string) (*protocol.QueryResult, error) {
 		actualClients = clientsOnline
 	}
 
-	// Build raw data with all TeamSpeak-specific fields
+	// Build raw data - put ALL fields from serverinfo response
 	rawData := make(map[string]interface{})
-	if platform := data["virtualserver_platform"]; platform != "" {
-		rawData["platform"] = platform
-	}
-	if uptime := data["virtualserver_uptime"]; uptime != "" {
-		rawData["uptime"] = uptime
-	}
-	if created := data["virtualserver_created"]; created != "" {
-		rawData["created"] = created
-	}
-	if codec := data["virtualserver_codec_encryption_mode"]; codec != "" {
-		rawData["codec_encryption"] = codec
-	}
-	if channels := data["virtualserver_channelsonline"]; channels != "" {
-		rawData["channels_online"] = parseInt(channels)
+	for key, value := range data {
+		// Convert numeric strings to integers where appropriate
+		if intVal := parseInt(value); intVal != 0 || value == "0" {
+			rawData[key] = intVal
+		} else {
+			rawData[key] = value
+		}
 	}
 
 	result := &protocol.QueryResult{

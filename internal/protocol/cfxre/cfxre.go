@@ -99,7 +99,7 @@ func (p *Protocol) Query(ctx context.Context, addr string) (*protocol.QueryResul
 		}
 	}
 
-	// Build result
+	// Build result with ALL data in raw
 	result := &protocol.QueryResult{
 		Online:     true,
 		Name:       info.Vars.SvHostname,
@@ -108,7 +108,10 @@ func (p *Protocol) Query(ctx context.Context, addr string) (*protocol.QueryResul
 		MaxPlayers: maxPlayers,
 		Version:    info.Server,
 		Ping:       ping,
-		Raw:        &info, // Full CFX.re response (includes projectName, projectDesc, tags, gameName, gameType, etc.)
+		Raw: map[string]interface{}{
+			"info":    info,    // Full /info.json response
+			"players": players, // Full /players.json response
+		},
 	}
 
 	// Convert players to protocol.Player format

@@ -50,9 +50,14 @@ func TestParseASEResponse_EYE1(t *testing.T) {
 	assert.False(t, result.Password)
 
 	// Check Raw contains protocol-specific data
-	rawMap, ok := result.Raw.(map[string]interface{})
-	assert.True(t, ok, "Raw should be a map")
-	assert.Equal(t, "Race", rawMap["gamemode"])
+	info, ok := result.Raw.(*MTAInfo)
+	assert.True(t, ok, "Raw should be MTAInfo struct")
+	assert.Equal(t, "Race", info.GameMode)
+	assert.Equal(t, "Test MTA Server", info.ServerName)
+	assert.Equal(t, "mta", info.GameType)
+	assert.Equal(t, "test_map", info.Map)
+	assert.Equal(t, 10, info.NumPlayers)
+	assert.Equal(t, 32, info.MaxPlayers)
 }
 
 func TestParseASEResponse_WithPassword(t *testing.T) {

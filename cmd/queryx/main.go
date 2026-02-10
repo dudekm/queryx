@@ -149,7 +149,6 @@ func printFormatted(result *queryx.QueryResult, debug bool) {
 		fmt.Printf("    Available in Raw field (use -json to see full data)\n")
 	}
 
-	fmt.Printf("\n  Queried at:   %s\n", result.QueriedAt.Format("2006-01-02 15:04:05"))
 	fmt.Printf("\n")
 }
 

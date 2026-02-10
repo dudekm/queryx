@@ -112,6 +112,16 @@ func buildPacket(ip net.IP, port int, opcode byte) []byte {
 	return packet
 }
 
+// SAMPInfo contains all data from SA-MP server info response
+type SAMPInfo struct {
+	Password   bool   `json:"password"`
+	NumPlayers int    `json:"numPlayers"`
+	MaxPlayers int    `json:"maxPlayers"`
+	Hostname   string `json:"hostname"`
+	Gamemode   string `json:"gamemode"`
+	Language   string `json:"language"`
+}
+
 // parseInfoResponse parses SA-MP info response (opcode 'i')
 func parseInfoResponse(data []byte) (*protocol.QueryResult, error) {
 	if len(data) < 11 {
@@ -129,25 +139,28 @@ func parseInfoResponse(data []byte) (*protocol.QueryResult, error) {
 
 	offset := 11
 
+	// Parse all fields into struct
+	info := &SAMPInfo{}
+
 	// Password protected (1 byte)
 	if offset >= len(data) {
 		return nil, fmt.Errorf("insufficient data for password flag")
 	}
-	password := data[offset] != 0
+	info.Password = data[offset] != 0
 	offset++
 
 	// Player count (2 bytes, little-endian)
 	if offset+2 > len(data) {
 		return nil, fmt.Errorf("insufficient data for player count")
 	}
-	numPlayers := int(binary.LittleEndian.Uint16(data[offset : offset+2]))
+	info.NumPlayers = int(binary.LittleEndian.Uint16(data[offset : offset+2]))
 	offset += 2
 
 	// Max players (2 bytes, little-endian)
 	if offset+2 > len(data) {
 		return nil, fmt.Errorf("insufficient data for max players")
 	}
-	maxPlayers := int(binary.LittleEndian.Uint16(data[offset : offset+2]))
+	info.MaxPlayers = int(binary.LittleEndian.Uint16(data[offset : offset+2]))
 	offset += 2
 
 	// Hostname (4-byte length + string)
@@ -155,6 +168,7 @@ func parseInfoResponse(data []byte) (*protocol.QueryResult, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to read hostname: %w", err)
 	}
+	info.Hostname = hostname
 	offset = newOffset
 
 	// Gamemode (4-byte length + string)
@@ -162,6 +176,7 @@ func parseInfoResponse(data []byte) (*protocol.QueryResult, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to read gamemode: %w", err)
 	}
+	info.Gamemode = gamemode
 	offset = newOffset
 
 	// Language (4-byte length + string)
@@ -169,18 +184,17 @@ func parseInfoResponse(data []byte) (*protocol.QueryResult, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to read language: %w", err)
 	}
+	info.Language = language
 
+	// Build result - put entire struct in Raw
 	result := &protocol.QueryResult{
 		Online:     true,
-		Name:       hostname,
-		Map:        gamemode,
-		NumPlayers: numPlayers,
-		MaxPlayers: maxPlayers,
-		Password:   password,
-		Raw: map[string]interface{}{
-			"language": language,
-			"gamemode": gamemode,
-		},
+		Name:       info.Hostname,
+		Map:        info.Gamemode,
+		NumPlayers: info.NumPlayers,
+		MaxPlayers: info.MaxPlayers,
+		Password:   info.Password,
+		Raw:        info, // ALL data in single struct
 	}
 
 	return result, nil

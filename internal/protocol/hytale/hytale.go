@@ -68,6 +68,19 @@ func buildQueryPacket(queryType byte) []byte {
 	return packet
 }
 
+// HytaleInfo contains all data from HyQuery response
+type HytaleInfo struct {
+	ServerName    string   `json:"serverName"`
+	MOTD          string   `json:"motd,omitempty"`
+	OnlinePlayers uint32   `json:"onlinePlayers"`
+	MaxPlayers    uint32   `json:"maxPlayers"`
+	Port          uint32   `json:"port"`
+	Version       string   `json:"version"`
+	ResponseType  byte     `json:"responseType"`
+	Players       []string `json:"players,omitempty"`
+	Plugins       []string `json:"plugins,omitempty"`
+}
+
 // parseResponse parses a HyQuery response packet
 func parseResponse(data []byte) (*protocol.QueryResult, error) {
 	if len(data) < 9 {
@@ -123,14 +136,15 @@ func parseResponse(data []byte) (*protocol.QueryResult, error) {
 		return nil, fmt.Errorf("failed to read version: %w", err)
 	}
 
-	// Build raw data
-	rawData := map[string]interface{}{
-		"port":         port,
-		"responseType": responseType,
-	}
-
-	if motd != "" {
-		rawData["motd"] = motd
+	// Build info struct with ALL parsed data
+	info := &HytaleInfo{
+		ServerName:    serverName,
+		MOTD:          motd,
+		OnlinePlayers: onlinePlayers,
+		MaxPlayers:    maxPlayers,
+		Port:          port,
+		Version:       version,
+		ResponseType:  responseType,
 	}
 
 	// Build result
@@ -148,18 +162,24 @@ func parseResponse(data []byte) (*protocol.QueryResult, error) {
 		players, offset, err := parsePlayers(data, offset)
 		if err == nil && len(players) > 0 {
 			result.Players = players
+			// Add player names to info struct
+			playerNames := make([]string, len(players))
+			for i, p := range players {
+				playerNames[i] = p.Name
+			}
+			info.Players = playerNames
 		}
 
 		// Parse plugins (if present)
 		if offset < len(data) {
 			plugins, _, err := parsePlugins(data, offset)
 			if err == nil && len(plugins) > 0 {
-				rawData["plugins"] = plugins
+				info.Plugins = plugins
 			}
 		}
 	}
 
-	result.Raw = rawData
+	result.Raw = info // ALL data in single struct
 	return result, nil
 }
 

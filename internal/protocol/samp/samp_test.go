@@ -63,10 +63,14 @@ func TestParseInfoResponse(t *testing.T) {
 	assert.False(t, result.Password)
 
 	// Check Raw contains protocol-specific data
-	rawMap, ok := result.Raw.(map[string]interface{})
-	assert.True(t, ok, "Raw should be a map")
-	assert.Equal(t, "English", rawMap["language"])
-	assert.Equal(t, "Roleplay", rawMap["gamemode"])
+	info, ok := result.Raw.(*SAMPInfo)
+	assert.True(t, ok, "Raw should be SAMPInfo struct")
+	assert.Equal(t, "English", info.Language)
+	assert.Equal(t, "Roleplay", info.Gamemode)
+	assert.Equal(t, "Test SA-MP Server", info.Hostname)
+	assert.Equal(t, 50, info.NumPlayers)
+	assert.Equal(t, 100, info.MaxPlayers)
+	assert.False(t, info.Password)
 }
 
 func TestParseInfoResponse_WithPassword(t *testing.T) {

@@ -112,8 +112,6 @@ func NewClient(opts ...Option) *Client {
 
 // Query queries a game server and returns the result
 func (c *Client) Query(ctx context.Context, gameType GameType, host string, port *int) (*QueryResult, error) {
-	startTime := time.Now()
-
 	c.logger.Debug("Starting query", F("gameType", gameType), F("host", host))
 
 	// Get protocol from factory
@@ -189,7 +187,6 @@ func (c *Client) Query(ctx context.Context, gameType GameType, host string, port
 		Password:   protocolResult.Password,
 		Players:    make([]Player, len(protocolResult.Players)),
 		Raw:        protocolResult.Raw, // ALL protocol-specific data
-		QueriedAt:  startTime,
 	}
 
 	// Convert players

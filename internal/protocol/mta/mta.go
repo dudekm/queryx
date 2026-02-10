@@ -27,6 +27,20 @@ const (
 	queryLight = 'b' // Light query
 )
 
+// MTAInfo contains all data from MTA ASE response
+type MTAInfo struct {
+	ServerName string            `json:"serverName"`
+	GameMode   string            `json:"gameMode"`
+	GameType   string            `json:"gameType"`
+	Map        string            `json:"map"`
+	Version    string            `json:"version"`
+	Password   bool              `json:"password"`
+	Port       string            `json:"port"`
+	NumPlayers int               `json:"numPlayers"`
+	MaxPlayers int               `json:"maxPlayers"`
+	Rules      map[string]string `json:"rules,omitempty"`
+}
+
 // Protocol implements Multi Theft Auto ASE Query Protocol
 type Protocol struct {
 	protocol.BaseProtocol
@@ -158,10 +172,17 @@ func parseASEResponse(data []byte) (*protocol.QueryResult, error) {
 	}
 	maxPlayers := int(maxPlayersBytes[0]) | (int(maxPlayersBytes[1]) << 8)
 
-	// Build result
-	rawData := map[string]interface{}{
-		"gamemode": gameMode,
-		"gametype": string(gameType[:len(gameType)-1]), // Remove null terminator
+	// Build info struct with ALL parsed data
+	info := &MTAInfo{
+		ServerName: serverName,
+		GameMode:   gameMode,
+		GameType:   string(gameType[:len(gameType)-1]), // Remove null terminator
+		Map:        mapName,
+		Version:    version,
+		Password:   passwordFlag != 0,
+		Port:       string(portStr),
+		NumPlayers: numPlayers,
+		MaxPlayers: maxPlayers,
 	}
 
 	// Try to parse rules (remaining data)
@@ -185,7 +206,7 @@ func parseASEResponse(data []byte) (*protocol.QueryResult, error) {
 			}
 
 			if len(rules) > 0 {
-				rawData["rules"] = rules
+				info.Rules = rules
 			}
 		}
 	}
@@ -198,7 +219,7 @@ func parseASEResponse(data []byte) (*protocol.QueryResult, error) {
 		MaxPlayers: maxPlayers,
 		Version:    version,
 		Password:   passwordFlag != 0,
-		Raw:        rawData,
+		Raw:        info, // ALL data in single struct
 	}
 
 	return result, nil
