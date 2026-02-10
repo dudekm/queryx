@@ -84,7 +84,7 @@ func (p *Protocol) Query(ctx context.Context, addr string) (*protocol.QueryResul
 	// Send via UDP and measure network latency (ping)
 	pingStart := time.Now()
 	response, err := p.Transport.SendUDP(ctx, addr, request)
-	ping := time.Since(pingStart)
+	pingDuration := time.Since(pingStart)
 
 	if err != nil {
 		return nil, fmt.Errorf("failed to send request: %w", err)
@@ -108,7 +108,7 @@ func (p *Protocol) Query(ctx context.Context, addr string) (*protocol.QueryResul
 			request = p.buildA2SInfoRequestWithChallenge(challenge)
 			pingStart = time.Now()
 			response, err = p.Transport.SendUDP(ctx, addr, request)
-			ping = time.Since(pingStart) // Update ping with actual data response time
+			pingDuration = time.Since(pingStart) // Update ping with actual data response time
 
 			if err != nil {
 				return nil, fmt.Errorf("failed to send challenge request: %w", err)
@@ -122,7 +122,8 @@ func (p *Protocol) Query(ctx context.Context, addr string) (*protocol.QueryResul
 		return nil, fmt.Errorf("failed to parse response: %w", err)
 	}
 
-	result.Ping = ping // Set network latency
+	pingMs := float64(pingDuration.Microseconds()) / 1000.0
+	result.Ping = pingMs // Set network latency in milliseconds
 	return result, nil
 }
 

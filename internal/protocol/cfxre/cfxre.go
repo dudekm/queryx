@@ -69,7 +69,8 @@ func (p *Protocol) Query(ctx context.Context, addr string) (*protocol.QueryResul
 	// Fetch /info.json
 	pingStart := time.Now()
 	infoData, err := p.Transport.SendHTTP(ctx, baseURL+"/info.json")
-	ping := time.Since(pingStart)
+	pingDuration := time.Since(pingStart)
+	pingMs := float64(pingDuration.Microseconds()) / 1000.0
 
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch /info.json: %w", err)
@@ -108,7 +109,7 @@ func (p *Protocol) Query(ctx context.Context, addr string) (*protocol.QueryResul
 		MaxPlayers: maxPlayers,
 		Players:    []protocol.Player{}, // Initialize as empty array, not nil
 		Version:    info.Server,
-		Ping:       ping,
+		Ping:       pingMs,
 		Raw: map[string]interface{}{
 			"info":    info,    // Full /info.json response
 			"players": players, // Full /players.json response

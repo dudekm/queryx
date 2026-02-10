@@ -76,7 +76,8 @@ func (p *Protocol) Query(ctx context.Context, addr string) (*protocol.QueryResul
 	// Send request and measure ping
 	pingStart := time.Now()
 	response, err := p.Transport.SendUDP(ctx, addr, request)
-	ping := time.Since(pingStart)
+	pingDuration := time.Since(pingStart)
+	pingMs := float64(pingDuration.Microseconds()) / 1000.0
 
 	if err != nil {
 		return nil, fmt.Errorf("failed to send SA-MP query: %w", err)
@@ -88,7 +89,7 @@ func (p *Protocol) Query(ctx context.Context, addr string) (*protocol.QueryResul
 		return nil, fmt.Errorf("failed to parse SA-MP response: %w", err)
 	}
 
-	result.Ping = ping
+	result.Ping = pingMs
 	return result, nil
 }
 

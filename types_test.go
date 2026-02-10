@@ -55,5 +55,5 @@ func TestPlayerZeroValue(t *testing.T) {
 	var player Player
 	assert.Equal(t, "", player.Name)
 	assert.Equal(t, 0, player.Score)
-	assert.Equal(t, time.Duration(0), player.Duration)
+	assert.Equal(t, float64(0), player.Duration)
 }

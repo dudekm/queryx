@@ -22,9 +22,7 @@ var (
 )
 
 // formatPing formats ping in milliseconds with appropriate precision
-func formatPing(d time.Duration) string {
-	ms := float64(d.Microseconds()) / 1000.0
-
+func formatPing(ms float64) string {
 	if ms < 1 {
 		// Sub-millisecond: show 2 decimal places (e.g., "0.85ms")
 		return fmt.Sprintf("%.2fms", ms)

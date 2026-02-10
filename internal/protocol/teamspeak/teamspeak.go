@@ -94,7 +94,8 @@ func (p *Protocol) Query(ctx context.Context, addr string) (*protocol.QueryResul
 		return nil, fmt.Errorf("failed to read serverinfo response: %w", err)
 	}
 
-	ping := time.Since(pingStart)
+	pingDuration := time.Since(pingStart)
+	pingMs := float64(pingDuration.Microseconds()) / 1000.0
 
 	// Parse serverinfo response
 	result, err := parseServerInfo(infoLine)
@@ -102,7 +103,7 @@ func (p *Protocol) Query(ctx context.Context, addr string) (*protocol.QueryResul
 		return nil, fmt.Errorf("failed to parse serverinfo: %w", err)
 	}
 
-	result.Ping = ping
+	result.Ping = pingMs
 
 	// Send quit command
 	conn.Write([]byte("quit\n"))
