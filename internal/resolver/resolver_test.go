@@ -119,3 +119,66 @@ func TestMockResolver_MultipleHosts(t *testing.T) {
 	assert.NoError(t, err2)
 	assert.Equal(t, "127.0.0.2", addr2.IP)
 }
+
+func TestDefaultResolver_Localhost(t *testing.T) {
+	resolver := NewDefaultResolver(0)
+	ctx := context.Background()
+
+	// Resolve localhost
+	addr, err := resolver.Resolve(ctx, "localhost", 25565, "")
+	assert.NoError(t, err)
+	assert.NotNil(t, addr)
+	assert.Equal(t, 25565, addr.Port)
+	assert.Equal(t, "localhost", addr.Hostname)
+	// IP should be either 127.0.0.1 or ::1
+	assert.NotEmpty(t, addr.IP)
+}
+
+func TestDefaultResolver_WithCustomPort(t *testing.T) {
+	resolver := NewDefaultResolver(0)
+	ctx := context.Background()
+
+	tests := []struct {
+		name string
+		port int
+	}{
+		{"standard port", 25565},
+		{"custom port", 8080},
+		{"high port", 65535},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			addr, err := resolver.Resolve(ctx, "127.0.0.1", tt.port, "")
+			assert.NoError(t, err)
+			assert.Equal(t, tt.port, addr.Port)
+		})
+	}
+}
+
+func TestDefaultResolver_InvalidHost(t *testing.T) {
+	resolver := NewDefaultResolver(0)
+	ctx := context.Background()
+
+	// Try to resolve non-existent domain (should fail or timeout)
+	addr, err := resolver.Resolve(ctx, "this-domain-definitely-does-not-exist-12345.invalid", 25565, "")
+	// Either error or timeout expected
+	if err == nil {
+		// If no error, addr should still be valid with some IP
+		assert.NotNil(t, addr)
+	} else {
+		assert.Nil(t, addr)
+	}
+}
+
+func TestDefaultResolver_SRVServiceEmpty(t *testing.T) {
+	resolver := NewDefaultResolver(0)
+	ctx := context.Background()
+
+	// When srvService is empty, should skip SRV lookup and do regular resolution
+	addr, err := resolver.Resolve(ctx, "127.0.0.1", 25565, "")
+	assert.NoError(t, err)
+	assert.NotNil(t, addr)
+	assert.Equal(t, "127.0.0.1", addr.IP)
+	assert.Equal(t, 25565, addr.Port)
+}

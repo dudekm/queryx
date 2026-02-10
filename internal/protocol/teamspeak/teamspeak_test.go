@@ -212,3 +212,8 @@ func TestParseServerInfo_ZeroClients(t *testing.T) {
 	assert.Equal(t, 0, result.NumPlayers)
 	assert.Equal(t, 100, result.MaxPlayers)
 }
+
+func TestProtocol_SRVService(t *testing.T) {
+	p := NewProtocol(nil, "TeamSpeak 3")
+	assert.Equal(t, "", p.SRVService())
+}

@@ -144,6 +144,37 @@ func TestReadLengthPrefixedString(t *testing.T) {
 	}
 }
 
+func TestProtocol_Query_Success(t *testing.T) {
+	mockTransport := transport.NewMockTransport()
+
+	// Build mock MTA ASE response
+	mockResponse := buildMockASEResponse(
+		"Test MTA Server",
+		"Race",
+		"race-dusty",
+		"1.6.0-9.21261.0",
+		25, // players
+		32, // max players
+		false,
+	)
+
+	// ASE query port = game port + 123
+	mockTransport.UDPResponses["127.0.0.1:22126"] = mockResponse
+
+	p := NewProtocol(mockTransport, "Multi Theft Auto")
+	result, err := p.Query(context.Background(), "127.0.0.1:22003")
+
+	assert.NoError(t, err)
+	assert.NotNil(t, result)
+	assert.True(t, result.Online)
+	assert.Equal(t, "Test MTA Server", result.Name)
+	assert.Equal(t, "race-dusty", result.Map)
+	assert.Equal(t, 25, result.NumPlayers)
+	assert.Equal(t, 32, result.MaxPlayers)
+	assert.Equal(t, "1.6.0-9.21261.0", result.Version)
+	assert.GreaterOrEqual(t, result.Ping, 0)
+}
+
 func TestProtocol_Query_TransportError(t *testing.T) {
 	mockTransport := transport.NewMockTransport()
 	mockTransport.UDPError = assert.AnError
