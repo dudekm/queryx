@@ -182,11 +182,11 @@ func TestParseServerInfo_AllExtraFields(t *testing.T) {
 	// Check Raw contains protocol-specific data
 	rawMap, ok := result.Raw.(map[string]interface{})
 	assert.True(t, ok, "Raw should be a map")
-	assert.Equal(t, "Windows", rawMap["platform"])
-	assert.Equal(t, 987654, rawMap["uptime"])      // Now converted to int
-	assert.Equal(t, 1234567890, rawMap["created"]) // Now converted to int
-	assert.Equal(t, 1, rawMap["codec_encryption"]) // Now converted to int
-	assert.Equal(t, 8, rawMap["channels_online"])
+	assert.Equal(t, "Windows", rawMap["virtualserver_platform"])
+	assert.Equal(t, 987654, rawMap["virtualserver_uptime"])
+	assert.Equal(t, 1234567890, rawMap["virtualserver_created"])
+	assert.Equal(t, 1, rawMap["virtualserver_codec_encryption_mode"])
+	assert.Equal(t, 8, rawMap["virtualserver_channelsonline"])
 }
 
 func TestParseServerInfo_MinimalResponse(t *testing.T) {
