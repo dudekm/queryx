@@ -160,6 +160,7 @@ func parseServerInfo(line string) (*protocol.QueryResult, error) {
 		Name:       serverName,
 		NumPlayers: actualClients,
 		MaxPlayers: maxClients,
+		Players:    []protocol.Player{}, // Initialize as empty array, not nil
 		Version:    data["virtualserver_version"],
 		Password:   data["virtualserver_flag_password"] == "1",
 		Raw:        rawData,

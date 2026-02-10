@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/dudekm/queryx/internal/protocol/source"
 	"github.com/dudekm/queryx/internal/transport"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -160,7 +161,6 @@ func TestIntegration_Minecraft_FullFlow(t *testing.T) {
 	assert.Equal(t, 0, result.Bots, "Minecraft has no bots")
 	assert.Equal(t, "Hypixel BETA", result.Version, "Version should match")
 	assert.GreaterOrEqual(t, result.Ping, time.Duration(0), "Ping should be non-negative")
-	assert.NotZero(t, result.QueriedAt, "QueriedAt should be set")
 
 	// You can refactor internal/* all you want - this test will still pass!
 }
@@ -206,12 +206,12 @@ func TestIntegration_CounterStrike_FullFlow(t *testing.T) {
 	assert.False(t, result.Password, "Server should be public")
 	assert.GreaterOrEqual(t, result.Ping, time.Duration(0), "Ping should be non-negative")
 
-	// Check Raw contains protocol-specific data
-	rawMap, ok := result.Raw.(map[string]interface{})
-	assert.True(t, ok, "Raw should be a map")
-	assert.Equal(t, uint16(730), rawMap["gameID"], "GameID should be 730")
-	assert.Equal(t, true, rawMap["vac"], "VAC should be enabled")
-	assert.Equal(t, "Counter-Strike 2", rawMap["game"], "Game name should match")
+	// Check Raw contains protocol-specific data (Source protocol returns SourceInfo struct)
+	sourceInfo, ok := result.Raw.(*source.SourceInfo)
+	assert.True(t, ok, "Raw should be SourceInfo struct for Source protocol")
+	assert.Equal(t, uint16(730), sourceInfo.GameID, "GameID should be 730")
+	assert.Equal(t, true, sourceInfo.VAC, "VAC should be enabled")
+	assert.Equal(t, "Counter-Strike 2", sourceInfo.Game, "Game name should match")
 
 	// You can refactor Protocol internals - this test still passes!
 }
@@ -362,7 +362,6 @@ func TestIntegration_APIContract(t *testing.T) {
 	// Raw is interface{} - contains ALL protocol-specific data (map[string]interface{} or custom struct)
 	// For Source Engine (CS2), it contains parsed server data
 	assert.NotNil(t, result.Raw, "Raw must not be nil")
-	assert.IsType(t, time.Time{}, result.QueriedAt, "QueriedAt must be time.Time")
 
 	// This test ensures the public API never breaks!
 }

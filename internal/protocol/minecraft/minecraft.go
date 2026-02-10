@@ -229,7 +229,8 @@ func (p *Protocol) convertToQueryResult(resp *serverResponse) *protocol.QueryRes
 		Name:       cleanMOTD(resp.Description),
 		NumPlayers: resp.Players.Online,
 		MaxPlayers: resp.Players.Max,
-		Bots:       0, // Minecraft servers don't have bots
+		Players:    []protocol.Player{}, // Initialize as empty array, not nil
+		Bots:       0,                   // Minecraft servers don't have bots
 		Version:    resp.Version.Name,
 		Password:   false, // Minecraft Java doesn't expose password info via query
 	}

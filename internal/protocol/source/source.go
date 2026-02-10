@@ -279,6 +279,7 @@ func (p *Protocol) parseA2SInfoResponse(data []byte) (*protocol.QueryResult, err
 		Map:        mapName,
 		NumPlayers: int(players),
 		MaxPlayers: int(maxPlayers),
+		Players:    []protocol.Player{}, // Initialize as empty array, not nil
 		Bots:       int(bots),
 		Version:    version,
 		Password:   visibility != 0, // visibility 0 = public, 1 = private/password
@@ -389,8 +390,9 @@ func (p *Protocol) parseGoldSrcResponse(reader *bytes.Reader) (*protocol.QueryRe
 		Map:        mapName,
 		NumPlayers: int(players),
 		MaxPlayers: int(maxPlayers),
-		Bots:       0,  // GoldSrc doesn't report bots separately
-		Version:    "", // GoldSrc doesn't include version in basic query
+		Players:    []protocol.Player{}, // Initialize as empty array, not nil
+		Bots:       0,                   // GoldSrc doesn't report bots separately
+		Version:    "",                  // GoldSrc doesn't include version in basic query
 		Password:   visibility == 1,
 		Raw:        info, // ALL data in single struct
 	}

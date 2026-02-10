@@ -106,6 +106,7 @@ func (p *Protocol) Query(ctx context.Context, addr string) (*protocol.QueryResul
 		Map:        info.Vars.MapName,
 		NumPlayers: len(players),
 		MaxPlayers: maxPlayers,
+		Players:    []protocol.Player{}, // Initialize as empty array, not nil
 		Version:    info.Server,
 		Ping:       ping,
 		Raw: map[string]interface{}{

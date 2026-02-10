@@ -153,6 +153,7 @@ func parseResponse(data []byte) (*protocol.QueryResult, error) {
 		Name:       serverName,
 		NumPlayers: int(onlinePlayers),
 		MaxPlayers: int(maxPlayers),
+		Players:    []protocol.Player{}, // Initialize as empty array, not nil
 		Version:    version,
 	}
 

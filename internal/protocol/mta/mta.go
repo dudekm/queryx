@@ -217,6 +217,7 @@ func parseASEResponse(data []byte) (*protocol.QueryResult, error) {
 		Map:        mapName,
 		NumPlayers: numPlayers,
 		MaxPlayers: maxPlayers,
+		Players:    []protocol.Player{}, // Initialize as empty array, not nil
 		Version:    version,
 		Password:   passwordFlag != 0,
 		Raw:        info, // ALL data in single struct

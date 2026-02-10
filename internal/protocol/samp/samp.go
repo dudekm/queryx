@@ -193,6 +193,7 @@ func parseInfoResponse(data []byte) (*protocol.QueryResult, error) {
 		Map:        info.Gamemode,
 		NumPlayers: info.NumPlayers,
 		MaxPlayers: info.MaxPlayers,
+		Players:    []protocol.Player{}, // Initialize as empty array, not nil
 		Password:   info.Password,
 		Raw:        info, // ALL data in single struct
 	}

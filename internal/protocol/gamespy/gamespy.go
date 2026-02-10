@@ -54,6 +54,7 @@ func (p *Protocol) Query(ctx context.Context, addr string) (*protocol.QueryResul
 		Map:        getString(data, "mapname"),
 		NumPlayers: getInt(data, "numplayers"),
 		MaxPlayers: getInt(data, "maxplayers"),
+		Players:    []protocol.Player{}, // Initialize as empty array, not nil
 		Version:    getString(data, "gamever"),
 		Password:   getInt(data, "password") == 1,
 		Ping:       ping,
