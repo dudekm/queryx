@@ -29,15 +29,13 @@ const (
 
 // Protocol implements Multi Theft Auto ASE Query Protocol
 type Protocol struct {
-	transport transport.Transport
-	gameName  string
+	protocol.BaseProtocol
 }
 
 // NewProtocol creates a new MTA protocol handler
 func NewProtocol(t transport.Transport, gameName string) *Protocol {
 	return &Protocol{
-		transport: t,
-		gameName:  gameName,
+		BaseProtocol: protocol.NewBaseProtocol(t, gameName),
 	}
 }
 
@@ -63,7 +61,7 @@ func (p *Protocol) Query(ctx context.Context, addr string) (*protocol.QueryResul
 
 	// Send request and measure ping
 	pingStart := time.Now()
-	response, err := p.transport.SendUDP(ctx, aseAddr, request)
+	response, err := p.Transport.SendUDP(ctx, aseAddr, request)
 	ping := time.Since(pingStart)
 
 	if err != nil {
@@ -232,7 +230,7 @@ func readLengthPrefixedString(reader *bytes.Reader) (string, error) {
 
 // Name returns the protocol name
 func (p *Protocol) Name() string {
-	return fmt.Sprintf("%s (ASE)", p.gameName)
+	return fmt.Sprintf("%s (ASE)", p.GameName)
 }
 
 // DefaultPort returns the default MTA server port

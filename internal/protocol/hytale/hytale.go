@@ -26,15 +26,13 @@ const (
 
 // Protocol implements HyQuery protocol for Hytale servers
 type Protocol struct {
-	transport transport.Transport
-	gameName  string
+	protocol.BaseProtocol
 }
 
 // NewProtocol creates a new Hytale protocol handler
 func NewProtocol(t transport.Transport, gameName string) *Protocol {
 	return &Protocol{
-		transport: t,
-		gameName:  gameName,
+		BaseProtocol: protocol.NewBaseProtocol(t, gameName),
 	}
 }
 
@@ -45,7 +43,7 @@ func (p *Protocol) Query(ctx context.Context, addr string) (*protocol.QueryResul
 
 	// Send via UDP and measure network latency (ping)
 	pingStart := time.Now()
-	response, err := p.transport.SendUDP(ctx, addr, request)
+	response, err := p.Transport.SendUDP(ctx, addr, request)
 	ping := time.Since(pingStart)
 
 	if err != nil {
@@ -243,7 +241,7 @@ func parsePlugins(data []byte, offset int) ([]string, int, error) {
 
 // Name returns the protocol name
 func (p *Protocol) Name() string {
-	return fmt.Sprintf("%s (HyQuery)", p.gameName)
+	return fmt.Sprintf("%s (HyQuery)", p.GameName)
 }
 
 // DefaultPort returns the default Hytale server port

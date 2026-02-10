@@ -29,15 +29,13 @@ const (
 
 // Protocol implements SA-MP Query Protocol
 type Protocol struct {
-	transport transport.Transport
-	gameName  string
+	protocol.BaseProtocol
 }
 
 // NewProtocol creates a new SA-MP protocol handler
 func NewProtocol(t transport.Transport, gameName string) *Protocol {
 	return &Protocol{
-		transport: t,
-		gameName:  gameName,
+		BaseProtocol: protocol.NewBaseProtocol(t, gameName),
 	}
 }
 
@@ -77,7 +75,7 @@ func (p *Protocol) Query(ctx context.Context, addr string) (*protocol.QueryResul
 
 	// Send request and measure ping
 	pingStart := time.Now()
-	response, err := p.transport.SendUDP(ctx, addr, request)
+	response, err := p.Transport.SendUDP(ctx, addr, request)
 	ping := time.Since(pingStart)
 
 	if err != nil {
@@ -209,7 +207,7 @@ func readString32(data []byte, offset int) (string, int, error) {
 
 // Name returns the protocol name
 func (p *Protocol) Name() string {
-	return fmt.Sprintf("%s (SA-MP)", p.gameName)
+	return fmt.Sprintf("%s (SA-MP)", p.GameName)
 }
 
 // DefaultPort returns the default SA-MP port

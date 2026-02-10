@@ -17,15 +17,13 @@ const (
 // Protocol implements GameSpy Query Protocol
 // Used by ARMA 2, ARMA 3, DayZ, Day of Dragons, and many other games
 type Protocol struct {
-	transport transport.Transport
-	gameName  string
+	protocol.BaseProtocol
 }
 
 // NewProtocol creates a new GameSpy protocol handler
 func NewProtocol(t transport.Transport, gameName string) *Protocol {
 	return &Protocol{
-		transport: t,
-		gameName:  gameName,
+		BaseProtocol: protocol.NewBaseProtocol(t, gameName),
 	}
 }
 
@@ -36,7 +34,7 @@ func (p *Protocol) Query(ctx context.Context, addr string) (*protocol.QueryResul
 
 	// Send via UDP and measure network latency (ping)
 	pingStart := time.Now()
-	response, err := p.transport.SendUDP(ctx, addr, request)
+	response, err := p.Transport.SendUDP(ctx, addr, request)
 	ping := time.Since(pingStart)
 
 	if err != nil {
@@ -74,13 +72,13 @@ func buildQueryPacket() []byte {
 
 // Name returns the protocol name
 func (p *Protocol) Name() string {
-	return fmt.Sprintf("%s (GameSpy)", p.gameName)
+	return fmt.Sprintf("%s (GameSpy)", p.GameName)
 }
 
 // DefaultPort returns the default GameSpy port
 func (p *Protocol) DefaultPort() int {
 	// Use game-specific ports
-	return GetDefaultPort(p.gameName)
+	return GetDefaultPort(p.GameName)
 }
 
 // SupportsSRV indicates that GameSpy does not use SRV records

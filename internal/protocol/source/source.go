@@ -31,15 +31,13 @@ const (
 // Protocol implements Source Engine Query Protocol (A2S)
 // Used by CS 1.6, CS:Source, CS2, TF2, Garry's Mod, etc.
 type Protocol struct {
-	transport transport.Transport
-	gameName  string // "CS 1.6", "CS2", etc.
+	protocol.BaseProtocol
 }
 
 // NewProtocol creates a new Source Engine protocol handler
 func NewProtocol(t transport.Transport, gameName string) *Protocol {
 	return &Protocol{
-		transport: t,
-		gameName:  gameName,
+		BaseProtocol: protocol.NewBaseProtocol(t, gameName),
 	}
 }
 
@@ -50,7 +48,7 @@ func (p *Protocol) Query(ctx context.Context, addr string) (*protocol.QueryResul
 
 	// Send via UDP and measure network latency (ping)
 	pingStart := time.Now()
-	response, err := p.transport.SendUDP(ctx, addr, request)
+	response, err := p.Transport.SendUDP(ctx, addr, request)
 	ping := time.Since(pingStart)
 
 	if err != nil {
@@ -74,7 +72,7 @@ func (p *Protocol) Query(ctx context.Context, addr string) (*protocol.QueryResul
 			// Resend request with challenge and measure ping for actual data response
 			request = p.buildA2SInfoRequestWithChallenge(challenge)
 			pingStart = time.Now()
-			response, err = p.transport.SendUDP(ctx, addr, request)
+			response, err = p.Transport.SendUDP(ctx, addr, request)
 			ping = time.Since(pingStart) // Update ping with actual data response time
 
 			if err != nil {
@@ -371,12 +369,12 @@ func readNullTerminatedString(r io.Reader) (string, error) {
 
 // Name returns the protocol name
 func (p *Protocol) Name() string {
-	return fmt.Sprintf("%s (Source Engine)", p.gameName)
+	return fmt.Sprintf("%s (Source Engine)", p.GameName)
 }
 
 // DefaultPort returns the default Source Engine port for this game
 func (p *Protocol) DefaultPort() int {
-	return GetDefaultPort(p.gameName)
+	return GetDefaultPort(p.GameName)
 }
 
 // SupportsSRV indicates that Source Engine does not use SRV records

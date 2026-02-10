@@ -19,13 +19,13 @@ const (
 
 // Protocol implements the Minecraft Java Edition Server List Ping protocol
 type Protocol struct {
-	transport transport.Transport
+	protocol.BaseProtocol
 }
 
 // NewProtocol creates a new Minecraft protocol handler
 func NewProtocol(t transport.Transport) *Protocol {
 	return &Protocol{
-		transport: t,
+		BaseProtocol: protocol.NewBaseProtocol(t, "Minecraft Java Edition"),
 	}
 }
 
@@ -56,7 +56,7 @@ func (p *Protocol) QueryWithHostname(ctx context.Context, addr string, hostname 
 
 	// Send via TCP and measure network latency (ping)
 	pingStart := time.Now()
-	response, err := p.transport.SendTCP(ctx, addr, request)
+	response, err := p.Transport.SendTCP(ctx, addr, request)
 	ping := time.Since(pingStart)
 
 	if err != nil {

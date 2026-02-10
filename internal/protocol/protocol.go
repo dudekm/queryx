@@ -3,6 +3,8 @@ package protocol
 import (
 	"context"
 	"time"
+
+	"github.com/dudekm/queryx/internal/transport"
 )
 
 // QueryResult represents the result of a server query
@@ -29,6 +31,21 @@ type Player struct {
 	Name     string
 	Score    int
 	Duration time.Duration
+}
+
+// BaseProtocol provides common fields for protocol implementations
+// Embed this in your protocol struct to avoid duplication (DRY principle)
+type BaseProtocol struct {
+	Transport transport.Transport
+	GameName  string
+}
+
+// NewBaseProtocol creates a new base protocol with transport and game name
+func NewBaseProtocol(t transport.Transport, gameName string) BaseProtocol {
+	return BaseProtocol{
+		Transport: t,
+		GameName:  gameName,
+	}
 }
 
 // Protocol defines the interface that all game server protocols must implement

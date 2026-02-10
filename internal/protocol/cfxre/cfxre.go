@@ -22,15 +22,13 @@ const (
 // Protocol implements CFX.re HTTP Query Protocol
 // Used by FiveM, RedM, and Alt:V
 type Protocol struct {
-	transport transport.Transport
-	gameName  string
+	protocol.BaseProtocol
 }
 
 // NewProtocol creates a new CFX.re protocol handler
 func NewProtocol(t transport.Transport, gameName string) *Protocol {
 	return &Protocol{
-		transport: t,
-		gameName:  gameName,
+		BaseProtocol: protocol.NewBaseProtocol(t, gameName),
 	}
 }
 
@@ -70,7 +68,7 @@ func (p *Protocol) Query(ctx context.Context, addr string) (*protocol.QueryResul
 
 	// Fetch /info.json
 	pingStart := time.Now()
-	infoData, err := p.transport.SendHTTP(ctx, baseURL+"/info.json")
+	infoData, err := p.Transport.SendHTTP(ctx, baseURL+"/info.json")
 	ping := time.Since(pingStart)
 
 	if err != nil {
@@ -83,7 +81,7 @@ func (p *Protocol) Query(ctx context.Context, addr string) (*protocol.QueryResul
 	}
 
 	// Fetch /players.json
-	playersData, err := p.transport.SendHTTP(ctx, baseURL+"/players.json")
+	playersData, err := p.Transport.SendHTTP(ctx, baseURL+"/players.json")
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch /players.json: %w", err)
 	}
@@ -128,12 +126,12 @@ func (p *Protocol) Query(ctx context.Context, addr string) (*protocol.QueryResul
 
 // Name returns the protocol name
 func (p *Protocol) Name() string {
-	return fmt.Sprintf("%s (CFX.re)", p.gameName)
+	return fmt.Sprintf("%s (CFX.re)", p.GameName)
 }
 
 // DefaultPort returns the default HTTP port for the game
 func (p *Protocol) DefaultPort() int {
-	return GetDefaultPort(p.gameName)
+	return GetDefaultPort(p.GameName)
 }
 
 // SupportsSRV indicates that CFX.re does not use SRV records

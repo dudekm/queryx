@@ -20,15 +20,13 @@ const (
 
 // Protocol implements TeamSpeak 3 ServerQuery Protocol
 type Protocol struct {
-	transport transport.Transport
-	gameName  string
+	protocol.BaseProtocol
 }
 
 // NewProtocol creates a new TeamSpeak protocol handler
 func NewProtocol(t transport.Transport, gameName string) *Protocol {
 	return &Protocol{
-		transport: t,
-		gameName:  gameName,
+		BaseProtocol: protocol.NewBaseProtocol(t, gameName),
 	}
 }
 
@@ -197,7 +195,7 @@ func unescapeValue(s string) string {
 
 // Name returns the protocol name
 func (p *Protocol) Name() string {
-	return fmt.Sprintf("%s (ServerQuery)", p.gameName)
+	return fmt.Sprintf("%s (ServerQuery)", p.GameName)
 }
 
 // DefaultPort returns the default TeamSpeak ServerQuery port
