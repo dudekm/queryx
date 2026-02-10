@@ -217,8 +217,9 @@ func (p *Protocol) parseResponse(data []byte) (*protocol.QueryResult, error) {
 
 	// Parse as generic map for Raw field - ALL protocol-specific data goes here
 	var rawParsed map[string]interface{}
-	json.Unmarshal(jsonData, &rawParsed)
-	result.Raw = rawParsed // Full Minecraft JSON response (includes favicon, protocol version, etc.)
+	if err := json.Unmarshal(jsonData, &rawParsed); err == nil {
+		result.Raw = rawParsed // Full Minecraft JSON response (includes favicon, protocol version, etc.)
+	}
 
 	return result, nil
 }

@@ -1,7 +1,6 @@
 package hytale
 
 import (
-	"bytes"
 	"context"
 	"encoding/binary"
 	"fmt"
@@ -279,14 +278,4 @@ func (p *Protocol) SupportsSRV() bool {
 // SRVService returns empty string (not used)
 func (p *Protocol) SRVService() string {
 	return ""
-}
-
-// buildFullQueryPacket builds a HyQuery full query request packet
-func buildFullQueryPacket() []byte {
-	return buildQueryPacket(queryTypeFull)
-}
-
-// parseResponseBuffer is a helper for testing
-func parseResponseBuffer(buf *bytes.Buffer) (*protocol.QueryResult, error) {
-	return parseResponse(buf.Bytes())
 }
