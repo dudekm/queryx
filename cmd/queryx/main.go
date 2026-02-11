@@ -18,6 +18,7 @@ var (
 	timeout  = flag.Duration("timeout", 5*time.Second, "Query timeout")
 	debug    = flag.Bool("debug", false, "Enable debug logging")
 	json     = flag.Bool("json", false, "Output as JSON")
+	verbose  = flag.Bool("verbose", false, "Show detailed diagnostic information (DNS, SRV, timing)")
 	version  = flag.Bool("version", false, "Show version information")
 )
 
@@ -67,21 +68,39 @@ func main() {
 
 	// Execute query
 	ctx := context.Background()
-	result, err := client.Query(ctx, queryx.GameType(*gameType), *host, portPtr)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-		os.Exit(1)
-	}
 
-	// Output result
-	if *json {
-		printJSON(result, *debug)
+	if *verbose {
+		// Use verbose query mode
+		verboseResult, err := client.QueryVerbose(ctx, queryx.GameType(*gameType), *host, portPtr)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+			os.Exit(1)
+		}
+
+		// Output result with diagnostics
+		if *json {
+			printVerboseJSON(verboseResult)
+		} else {
+			printVerboseFormatted(verboseResult)
+		}
 	} else {
-		printFormatted(result, *debug)
+		// Use normal query mode
+		result, err := client.Query(ctx, queryx.GameType(*gameType), *host, portPtr)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+			os.Exit(1)
+		}
+
+		// Output result
+		if *json {
+			printJSON(result)
+		} else {
+			printFormatted(result)
+		}
 	}
 }
 
-func printFormatted(result *queryx.QueryResult, debug bool) {
+func printFormatted(result *queryx.QueryResult) {
 	fmt.Printf("═══════════════════════════════════════\n")
 	fmt.Printf("  %s\n", result.Name)
 	fmt.Printf("═══════════════════════════════════════\n")
@@ -138,8 +157,81 @@ func printFormatted(result *queryx.QueryResult, debug bool) {
 	fmt.Printf("\n")
 }
 
-func printJSON(result *queryx.QueryResult, debug bool) {
+func printVerboseFormatted(verboseResult *queryx.VerboseQueryResult) {
+	result := verboseResult.Result
+	diag := verboseResult.Diagnostics
+
+	// Print standard result
+	printFormatted(result)
+
+	// Print diagnostic information
+	fmt.Printf("═══════════════════════════════════════\n")
+	fmt.Printf("  DIAGNOSTIC INFORMATION\n")
+	fmt.Printf("═══════════════════════════════════════\n")
+	fmt.Printf("\n")
+
+	// Query metadata
+	fmt.Printf("  Timestamp:    %s\n", diag.Timestamp.Format("2006-01-02 15:04:05 MST"))
+	fmt.Printf("  Protocol:     %s\n", diag.QueryMetrics.Protocol)
+	if diag.QueryMetrics.ProtocolVersion > 0 {
+		fmt.Printf("  Protocol Ver: %d\n", diag.QueryMetrics.ProtocolVersion)
+	}
+	fmt.Printf("  Success:      %v\n", diag.QueryMetrics.Success)
+
+	// Timing information
+	fmt.Printf("\n  Timing:\n")
+	fmt.Printf("    DNS Lookup:   %dms\n", diag.QueryMetrics.DNSLatencyMs)
+	fmt.Printf("    Server Query: %dms\n", diag.QueryMetrics.QueryLatencyMs)
+	fmt.Printf("    Network Ping: %dms\n", diag.QueryMetrics.LatencyMs)
+	totalTime := diag.QueryMetrics.DNSLatencyMs + diag.QueryMetrics.QueryLatencyMs
+	fmt.Printf("    Total Time:   %dms\n", totalTime)
+
+	// DNS Resolution
+	fmt.Printf("\n  DNS Resolution:\n")
+	fmt.Printf("    Input Host:   %s\n", diag.Resolution.InputHostname)
+	fmt.Printf("    Resolved IP:  %s\n", diag.Resolution.ResolvedIP)
+	fmt.Printf("    Resolved Port: %d\n", diag.Resolution.ResolvedPort)
+
+	// SRV Records
+	if diag.Resolution.SRVRecordFound {
+		fmt.Printf("\n  SRV Records:  ✓ Found\n")
+		for i, srv := range diag.Resolution.SRVRecords {
+			fmt.Printf("    [%d] %s:%d (priority: %d, weight: %d)\n",
+				i+1, srv.Target, srv.Port, srv.Priority, srv.Weight)
+		}
+	} else {
+		fmt.Printf("\n  SRV Records:  ✗ Not found\n")
+	}
+
+	// A/AAAA Records
+	if len(diag.Resolution.ARecords) > 0 {
+		fmt.Printf("\n  A Records (IPv4):\n")
+		for _, ip := range diag.Resolution.ARecords {
+			fmt.Printf("    - %s\n", ip)
+		}
+	}
+
+	if len(diag.Resolution.AAAARecords) > 0 {
+		fmt.Printf("\n  AAAA Records (IPv6):\n")
+		for _, ip := range diag.Resolution.AAAARecords {
+			fmt.Printf("    - %s\n", ip)
+		}
+	}
+
+	fmt.Printf("\n")
+}
+
+func printJSON(result *queryx.QueryResult) {
 	data, err := ejson.MarshalIndent(result, "", "  ")
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error marshaling JSON: %v\n", err)
+		os.Exit(1)
+	}
+	fmt.Println(string(data))
+}
+
+func printVerboseJSON(verboseResult *queryx.VerboseQueryResult) {
+	data, err := ejson.MarshalIndent(verboseResult, "", "  ")
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error marshaling JSON: %v\n", err)
 		os.Exit(1)
