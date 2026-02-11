@@ -197,6 +197,169 @@ func (c *Client) QueryWithOptions(ctx context.Context, input QueryInput) (*Query
 	return c.Query(ctx, input.ServerType, input.Host, input.Port)
 }
 
+// QueryVerbose queries a game server and returns both the result and detailed diagnostics
+// This is useful for debugging, monitoring, or displaying detailed DNS/query information
+func (c *Client) QueryVerbose(ctx context.Context, gameType GameType, host string, port *int) (*VerboseQueryResult, error) {
+	queryStart := time.Now()
+	c.logger.Debug("Starting verbose query", F("gameType", gameType), F("host", host))
+
+	// Get protocol from factory
+	proto, err := c.factory.Get(string(gameType))
+	if err != nil {
+		if err == protocol.ErrUnsupportedGame {
+			return nil, NewQueryError(gameType, host, ErrUnsupportedGame)
+		}
+		return nil, NewQueryError(gameType, host, err)
+	}
+
+	// Determine port
+	defaultPort := proto.DefaultPort()
+	if port != nil {
+		defaultPort = *port
+	}
+
+	// Prepare diagnostics
+	diagnostics := &QueryDiagnostics{
+		Timestamp: queryStart,
+		Input: QueryInput{
+			ServerType: gameType,
+			Host:       host,
+			Port:       port,
+			Timeout:    c.timeout,
+		},
+		QueryMetrics: QueryMetrics{
+			Protocol: proto.Name(),
+		},
+	}
+
+	// Resolve hostname with diagnostics
+	dnsStart := time.Now()
+	srvService := ""
+	if proto.SupportsSRV() {
+		srvService = proto.SRVService()
+	}
+
+	var addr *resolver.Address
+	var resDiag *resolver.ResolutionDiagnostics
+
+	// Check if resolver supports verbose mode
+	if verboseResolver, ok := c.resolver.(resolver.VerboseResolver); ok {
+		addr, resDiag, err = verboseResolver.ResolveWithDiagnostics(ctx, host, defaultPort, srvService)
+	} else {
+		// Fallback to regular resolve
+		addr, err = c.resolver.Resolve(ctx, host, defaultPort, srvService)
+		resDiag = &resolver.ResolutionDiagnostics{
+			InputHostname:  host,
+			ResolvedIP:     addr.IP,
+			ResolvedPort:   addr.Port,
+			SRVRecordFound: false,
+			SRVRecords:     []resolver.SRVRecordInfo{},
+			ARecords:       []string{addr.IP},
+			AAAARecords:    []string{},
+		}
+	}
+
+	dnsLatency := time.Since(dnsStart)
+	diagnostics.QueryMetrics.DNSLatencyMs = int(dnsLatency.Milliseconds())
+
+	if err != nil {
+		c.logger.Error("DNS resolution failed", F("host", host), F("error", err))
+		diagnostics.QueryMetrics.Success = false
+		return &VerboseQueryResult{
+			Result:      nil,
+			Diagnostics: diagnostics,
+		}, NewQueryError(gameType, host, fmt.Errorf("%w: %v", ErrDNSResolution, err))
+	}
+
+	// Map resolver diagnostics to public API
+	diagnostics.Resolution = DNSResolution{
+		InputHostname:  resDiag.InputHostname,
+		ResolvedIP:     resDiag.ResolvedIP,
+		ResolvedPort:   resDiag.ResolvedPort,
+		SRVRecordFound: resDiag.SRVRecordFound,
+		ARecords:       resDiag.ARecords,
+		AAAARecords:    resDiag.AAAARecords,
+	}
+
+	// Convert SRV records
+	for _, srvRec := range resDiag.SRVRecords {
+		diagnostics.Resolution.SRVRecords = append(diagnostics.Resolution.SRVRecords, SRVRecord{
+			Target:   srvRec.Target,
+			Port:     srvRec.Port,
+			Priority: srvRec.Priority,
+			Weight:   srvRec.Weight,
+		})
+	}
+
+	c.logger.Debug("Resolved address", F("address", addr.String()))
+
+	// Create context with timeout if not already set
+	queryCtx := ctx
+	if _, ok := ctx.Deadline(); !ok {
+		var cancel context.CancelFunc
+		queryCtx, cancel = context.WithTimeout(ctx, c.timeout)
+		defer cancel()
+	}
+
+	// Query the server
+	queryOnlyStart := time.Now()
+	var protocolResult *protocol.QueryResult
+
+	// Check if protocol supports QueryWithHostname (for SNI/virtual hosting)
+	type hostnameAware interface {
+		QueryWithHostname(ctx context.Context, addr string, hostname string) (*protocol.QueryResult, error)
+	}
+
+	if hostnameProto, ok := proto.(hostnameAware); ok {
+		// Use original hostname for protocols that need it (like Minecraft)
+		protocolResult, err = hostnameProto.QueryWithHostname(queryCtx, addr.String(), host)
+	} else {
+		// Use standard Query for protocols that don't need hostname
+		protocolResult, err = proto.Query(queryCtx, addr.String())
+	}
+
+	queryOnlyLatency := time.Since(queryOnlyStart)
+	diagnostics.QueryMetrics.QueryLatencyMs = int(queryOnlyLatency.Milliseconds())
+
+	if err != nil {
+		c.logger.Error("Query failed", F("address", addr.String()), F("error", err))
+		diagnostics.QueryMetrics.Success = false
+		return &VerboseQueryResult{
+			Result:      nil,
+			Diagnostics: diagnostics,
+		}, NewQueryError(gameType, host, err)
+	}
+
+	// Set query metrics
+	diagnostics.QueryMetrics.Success = true
+	diagnostics.QueryMetrics.LatencyMs = protocolResult.Ping
+
+	// Try to extract protocol version from Raw data if available
+	if rawMap, ok := protocolResult.Raw.(map[string]interface{}); ok {
+		if version, ok := rawMap["version"].(map[string]interface{}); ok {
+			if protocolVersion, ok := version["protocol"].(float64); ok {
+				diagnostics.QueryMetrics.ProtocolVersion = int(protocolVersion)
+			}
+		}
+	}
+
+	// Use domain model directly (no conversion needed - SOLID/DDD pattern)
+	protocolResult.Type = string(gameType)
+
+	c.logger.Info("Verbose query successful",
+		F("address", addr.String()),
+		F("ping", protocolResult.Ping),
+		F("online", protocolResult.Online),
+		F("dns_latency_ms", diagnostics.QueryMetrics.DNSLatencyMs),
+		F("query_latency_ms", diagnostics.QueryMetrics.QueryLatencyMs),
+	)
+
+	return &VerboseQueryResult{
+		Result:      protocolResult,
+		Diagnostics: diagnostics,
+	}, nil
+}
+
 // QuickQuery is a convenience function for quick one-off queries
 // It creates a new client with default settings and performs the query
 func QuickQuery(gameType GameType, host string) (*QueryResult, error) {

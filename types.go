@@ -110,3 +110,48 @@ type QueryResult = protocol.QueryResult
 
 // Player is an alias to the domain model (DDD pattern)
 type Player = protocol.Player
+
+// VerboseQueryResult contains both the query result and diagnostic information
+// Returned by QueryVerbose() when detailed metadata is needed
+type VerboseQueryResult struct {
+	Result      *QueryResult      // Standard query result (with Raw containing server data)
+	Diagnostics *QueryDiagnostics // Diagnostic metadata about the query execution
+}
+
+// QueryDiagnostics contains detailed diagnostic information about query execution
+// This includes DNS resolution details, timing, and protocol metadata
+type QueryDiagnostics struct {
+	Timestamp    time.Time     // When the query was executed
+	Input        QueryInput    // Original input parameters
+	Resolution   DNSResolution // DNS resolution details
+	QueryMetrics QueryMetrics  // Query execution metrics
+}
+
+// DNSResolution contains detailed information about DNS resolution
+type DNSResolution struct {
+	InputHostname  string      // Original hostname provided by user
+	ResolvedIP     string      // Resolved IP address
+	ResolvedPort   int         // Resolved port (may differ from input if SRV was used)
+	SRVRecordFound bool        // Whether SRV record was found and used
+	SRVRecords     []SRVRecord // All SRV records found (if any)
+	ARecords       []string    // A (IPv4) records found
+	AAAARecords    []string    // AAAA (IPv6) records found
+}
+
+// SRVRecord represents a DNS SRV record
+type SRVRecord struct {
+	Target   string // Target hostname from SRV record
+	Port     int    // Port from SRV record
+	Priority int    // Priority (lower is preferred)
+	Weight   int    // Weight for load balancing
+}
+
+// QueryMetrics contains metrics about query execution
+type QueryMetrics struct {
+	Protocol        string // Protocol used (e.g., "Minecraft Java Edition")
+	ProtocolVersion int    // Protocol version used (if applicable)
+	LatencyMs       int    // Network latency in milliseconds
+	Success         bool   // Whether query was successful
+	DNSLatencyMs    int    // Time spent on DNS resolution
+	QueryLatencyMs  int    // Time spent on actual server query
+}

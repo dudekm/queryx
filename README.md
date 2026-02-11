@@ -111,6 +111,52 @@ if !result.Online {
 fmt.Printf("Server: %s\n", result.Name)
 ```
 
+### Verbose Mode (Diagnostic Information)
+
+Get detailed diagnostic information including DNS resolution, SRV records, and timing metrics:
+
+```go
+// Query with verbose diagnostics
+verboseResult, err := client.QueryVerbose(ctx, queryx.GameMinecraft, "sopelmc.pl", nil)
+if err != nil {
+    log.Fatal(err)
+}
+
+// Access standard query result
+result := verboseResult.Result
+fmt.Printf("Server: %s\n", result.Name)
+fmt.Printf("Players: %d/%d\n", result.NumPlayers, result.MaxPlayers)
+
+// Access diagnostic information
+diag := verboseResult.Diagnostics
+fmt.Printf("\nDNS Resolution:\n")
+fmt.Printf("  Input Host: %s\n", diag.Resolution.InputHostname)
+fmt.Printf("  Resolved IP: %s\n", diag.Resolution.ResolvedIP)
+fmt.Printf("  Resolved Port: %d\n", diag.Resolution.ResolvedPort)
+fmt.Printf("  SRV Record Found: %v\n", diag.Resolution.SRVRecordFound)
+
+fmt.Printf("\nTiming:\n")
+fmt.Printf("  DNS Latency: %dms\n", diag.QueryMetrics.DNSLatencyMs)
+fmt.Printf("  Query Latency: %dms\n", diag.QueryMetrics.QueryLatencyMs)
+fmt.Printf("  Network Ping: %dms\n", diag.QueryMetrics.LatencyMs)
+
+// Access SRV records if found
+if len(diag.Resolution.SRVRecords) > 0 {
+    fmt.Printf("\nSRV Records:\n")
+    for _, srv := range diag.Resolution.SRVRecords {
+        fmt.Printf("  %s:%d (priority: %d, weight: %d)\n",
+            srv.Target, srv.Port, srv.Priority, srv.Weight)
+    }
+}
+```
+
+**Diagnostic Information Includes:**
+- Input hostname and resolved IP/port
+- DNS resolution details (A, AAAA, SRV records)
+- Query timing (DNS lookup, server query, network ping)
+- Protocol information (name, version)
+- Success status
+
 ## 🖥️ CLI Tool
 
 ### Build
@@ -137,8 +183,14 @@ go build -o queryx ./cmd/queryx
 # JSON output
 ./queryx -host hypixel.net -json
 
-# Debug mode
+# Debug mode (logs to console)
 ./queryx -host hypixel.net -debug
+
+# Verbose mode (detailed diagnostics)
+./queryx -host sopelmc.pl -verbose
+
+# Verbose with JSON
+./queryx -host sopelmc.pl -verbose -json
 
 # Custom timeout
 ./queryx -host hypixel.net -timeout 10s
@@ -152,7 +204,8 @@ go build -o queryx ./cmd/queryx
 -type string       Game type (default "minecraft")
                    Options: minecraft, cs2, cs16, cssource
 -timeout duration  Query timeout (default 5s)
--debug            Enable debug logging
+-debug            Enable debug logging (console output)
+-verbose          Show detailed diagnostic information (DNS, SRV, timing)
 -json             Output as JSON
 -version          Show version
 ```
