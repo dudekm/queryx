@@ -1,10 +1,21 @@
 name: Test
 
 on:
-  push:
-    branches: [ main, v1 ]
+  # Run when a pull request targeting main is opened or updated.
   pull_request:
-    branches: [ main, v1 ]
+    branches: [ main ]
+  # Run on main only when something is merged (i.e. a push lands on main).
+  # No tag triggers here, so tagging a version never runs the test suite.
+  push:
+    branches: [ main ]
+
+# Avoid duplicate/overlapping runs: a push to a feature branch fires only the
+# pull_request event (push is scoped to main), and a merge to main fires only
+# the push event (the PR closes without a test-triggering pull_request type).
+# This also cancels superseded in-progress runs on the same ref.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   test:

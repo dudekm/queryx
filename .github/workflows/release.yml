@@ -25,9 +25,9 @@ jobs:
         go-version: '1.23'
         cache: true
 
-    - name: Run tests
-      run: go test -v ./...
-
+    # Tests are intentionally NOT run here: the suite already ran on the pull
+    # request and on the merge to main before the tag was created. Tagging a
+    # version only builds and publishes the release artifacts.
     - name: Build binaries
       run: |
         # Linux amd64
