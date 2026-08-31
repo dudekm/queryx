@@ -10,10 +10,15 @@ Universal Go library for querying game servers (Minecraft, Counter-Strike, etc.)
 
 ## 🎮 Supported Games
 
+QueryX supports 60+ games across 6 protocols. Highlights:
+
 - ✅ **Minecraft Java Edition**
-- ✅ **Counter-Strike 2**
-- ✅ **Counter-Strike 1.6**
-- ✅ **Counter-Strike: Source**
+- ✅ **Counter-Strike 2 / 1.6 / Source**
+- ✅ **Rust** (Source Engine A2S, default port `28015`)
+- ✅ **FiveM / RedM / Alt:V** (CFX.re HTTP)
+- ✅ **ARMA 2/3, DayZ** (GameSpy)
+- ✅ **SA-MP, Multi Theft Auto, TeamSpeak 3**
+- ✅ …and 40+ more Source Engine titles (ARK, Squad, Valheim, 7 Days to Die, etc.)
 
 ## 📦 Installation
 
@@ -48,9 +53,9 @@ func main() {
     }
 
     fmt.Printf("Server: %s\n", result.Name)
-    fmt.Printf("Players: %d/%d\n", result.Players.Online, result.MaxPlayers)
+    fmt.Printf("Players: %d/%d\n", result.NumPlayers, result.MaxPlayers)
     fmt.Printf("Version: %s\n", result.Version)
-    fmt.Printf("Ping: %v\n", result.Ping)
+    fmt.Printf("Ping: %dms\n", result.Ping)
 }
 ```
 
@@ -86,6 +91,12 @@ result, err := client.Query(ctx, queryx.GameCS16, "cs16.example.com", nil)
 
 // Counter-Strike: Source
 result, err := client.Query(ctx, queryx.GameCSSource, "css.example.com", nil)
+
+// Rust (Source Engine A2S, default query port 28015)
+result, err := client.Query(ctx, queryx.GameRust, "rust.example.com", nil)
+
+// FiveM (CFX.re HTTP, default port 30120)
+result, err := client.Query(ctx, queryx.GameFiveM, "fivem.example.com", nil)
 ```
 
 ### Error Handling
@@ -180,6 +191,12 @@ go build -o queryx ./cmd/queryx
 # Counter-Strike 1.6
 ./queryx -type cs16 -host cs16.example.com
 
+# Rust (default query port 28015)
+./queryx -type rust -host rust.example.com
+
+# FiveM (CFX.re HTTP, default port 30120)
+./queryx -type fivem -host fivem.example.com
+
 # JSON output
 ./queryx -host hypixel.net -json
 
@@ -202,7 +219,9 @@ go build -o queryx ./cmd/queryx
 -host string       Server hostname (required)
 -port int          Server port (default: game-specific)
 -type string       Game type (default "minecraft")
-                   Options: minecraft, cs2, cs16, cssource
+                   Options: minecraft, cs2, cs16, cssource, rust, fivem,
+                   redm, altv, arma3, dayz, samp, mta, teamspeak, and 40+
+                   more Source Engine titles (see types.go)
 -timeout duration  Query timeout (default 5s)
 -debug            Enable debug logging (console output)
 -verbose          Show detailed diagnostic information (DNS, SRV, timing)
@@ -228,6 +247,58 @@ go build -o queryx.exe ./cmd/queryx
 # Build for Linux
 GOOS=linux go build -o queryx ./cmd/queryx
 ```
+
+## 🐳 Docker
+
+You can develop, test, lint and run QueryX entirely in Docker — no local Go
+toolchain required. A multi-stage `Dockerfile`, a `docker-compose.yml` with
+ready-made service definitions, and a `Makefile` with `docker-*` shortcuts are
+included.
+
+### Using the Makefile (recommended)
+
+```bash
+make docker-test        # run the full test suite in a container
+make docker-test-short  # run unit tests only (fast)
+make docker-lint        # run golangci-lint
+make docker-dev         # open an interactive dev shell
+make docker-build       # build the runtime CLI image (queryx:local)
+
+# Run the CLI, passing flags via ARGS
+make docker-run ARGS="-type rust -host rust.example.com"
+make docker-run ARGS="-type fivem -host fivem.example.com -json"
+```
+
+Run `make help` to list every available target (local and Docker).
+
+### Using docker compose directly
+
+```bash
+# Development & CI workflows (source mounted, module/build caches persisted)
+docker compose run --rm test          # full test suite
+docker compose run --rm test-short    # unit tests only
+docker compose run --rm coverage      # write coverage.out
+docker compose run --rm lint          # golangci-lint
+docker compose run --rm dev           # interactive shell
+
+# Build and run the CLI image
+docker compose build queryx
+docker compose run --rm queryx -type minecraft -host hypixel.net
+```
+
+### Building and running the image by hand
+
+```bash
+# Build (override the Go version if needed with --build-arg GO_VERSION=1.25)
+docker build -t queryx:local .
+
+# The image's entrypoint is the queryx binary
+docker run --rm queryx:local -version
+docker run --rm queryx:local -type cs2 -host cs2.example.com
+```
+
+The runtime image is a minimal Alpine layer containing only the statically
+linked binary and CA certificates, and runs as a non-root user.
 
 ## 🧪 Testing
 
@@ -385,7 +456,15 @@ queryx/
 │   ├── resolver/             # DNS resolution with SRV support
 │   └── protocol/             # Protocol implementations
 │       ├── minecraft/        # Minecraft protocol
-│       └── source/           # Source Engine (CS2, CS 1.6, CS:S)
+│       ├── source/           # Source Engine (CS2, CS 1.6, CS:S, Rust, ...)
+│       ├── cfxre/            # CFX.re HTTP (FiveM, RedM, Alt:V)
+│       ├── gamespy/          # GameSpy (ARMA 2/3, DayZ)
+│       ├── samp/             # SA-MP
+│       ├── mta/              # Multi Theft Auto (ASE)
+│       └── teamspeak/        # TeamSpeak 3
+├── Dockerfile                # Multi-stage build for the CLI image
+├── docker-compose.yml        # Dev/test/lint/run services
+├── Makefile                  # Local + Docker task shortcuts
 └── examples/
     ├── library/              # Library usage
     └── protocol_comparison/  # Protocol comparison demo
@@ -508,7 +587,7 @@ fmt.Printf("Raw response: %x\n", result.Raw)
 - [x] Phase 1: Foundation (types, transport, resolver, protocol interface)
 - [x] Phase 2: Minecraft Java Edition
 - [x] Phase 3: Counter-Strike (CS2, CS 1.6, CS:Source)
-- [ ] Phase 4: More protocols (Rust, TeamSpeak, FiveM, SA-MP)
+- [x] Phase 4: More protocols (Rust, TeamSpeak, FiveM, SA-MP, GameSpy, MTA)
 - [ ] Phase 5: Advanced features (A2S_PLAYER, A2S_RULES, connection pooling)
 
 ## 📄 License

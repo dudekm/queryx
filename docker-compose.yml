@@ -1,0 +1,70 @@
+# Docker Compose for QueryX local development.
+#
+# Common workflows:
+#   docker compose run --rm test          # run the full test suite
+#   docker compose run --rm test-short    # run unit tests only (fast)
+#   docker compose run --rm lint          # run golangci-lint
+#   docker compose run --rm dev           # interactive dev shell
+#   docker compose run --rm queryx -type fivem -host <ip>   # run the CLI
+#
+# Named volumes cache the Go module and build caches across runs so repeated
+# test/build invocations stay fast.
+
+# Shared configuration for source-mounted Go tooling containers (DRY).
+x-go-dev: &go-dev
+  image: golang:1.24-alpine
+  working_dir: /src
+  volumes:
+    - .:/src
+    - go-mod-cache:/go/pkg/mod
+    - go-build-cache:/root/.cache/go-build
+  environment:
+    - CGO_ENABLED=0
+    - GOFLAGS=-buildvcs=false
+
+services:
+  # Interactive development shell with the source mounted live.
+  dev:
+    <<: *go-dev
+    entrypoint: ["/bin/sh"]
+    stdin_open: true
+    tty: true
+
+  # Full test suite (unit + integration).
+  test:
+    <<: *go-dev
+    command: ["go", "test", "./...", "-v"]
+
+  # Unit tests only (fast, skips integration-heavy paths via -short).
+  test-short:
+    <<: *go-dev
+    command: ["go", "test", "./...", "-short"]
+
+  # Test coverage profile (written to coverage.out in the project root).
+  coverage:
+    <<: *go-dev
+    command: ["go", "test", "./...", "-coverprofile=coverage.out"]
+
+  # Static analysis with golangci-lint (uses the repo's .golangci.yml).
+  lint:
+    image: golangci/golangci-lint:v1.62.2
+    working_dir: /src
+    volumes:
+      - .:/src
+      - go-mod-cache:/go/pkg/mod
+      - go-build-cache:/root/.cache/go-build
+    environment:
+      - GOFLAGS=-buildvcs=false
+    command: ["golangci-lint", "run", "./..."]
+
+  # Runtime CLI image built from the Dockerfile.
+  # Args after the service name are passed to the queryx binary.
+  queryx:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: queryx:local
+
+volumes:
+  go-mod-cache:
+  go-build-cache:

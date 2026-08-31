@@ -51,6 +51,36 @@ go test -v -run TestProtocol_Query_Success
 go test -v -run TestIntegration_Minecraft_FullFlow
 ```
 
+### Docker (local dev/test without a host Go toolchain)
+
+A multi-stage `Dockerfile`, a `docker-compose.yml`, and a `Makefile` provide a
+containerized workflow. The compose services mount the source and cache the Go
+module/build caches in named volumes.
+
+```bash
+# Via Makefile (see `make help` for all targets)
+make docker-test         # full test suite in a container
+make docker-test-short   # unit tests only
+make docker-lint         # golangci-lint
+make docker-dev          # interactive shell
+make docker-build        # build runtime CLI image (queryx:local)
+make docker-run ARGS="-type rust -host rust.example.com"
+
+# Via docker compose directly
+docker compose run --rm test
+docker compose run --rm test-short
+docker compose run --rm lint
+docker compose build queryx
+docker compose run --rm queryx -type fivem -host fivem.example.com
+
+# Build/run the image by hand (override Go version if needed)
+docker build --build-arg GO_VERSION=1.25 -t queryx:local .
+docker run --rm queryx:local -version
+```
+
+The runtime image is a minimal Alpine layer with only the static binary and CA
+certificates, running as a non-root user.
+
 ## Architecture
 
 ### Core Design Principles

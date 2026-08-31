@@ -12,6 +12,9 @@ import (
 	"github.com/dudekm/queryx/internal/transport"
 )
 
+// defaultMaxPlayers is used when the server does not report a valid slot count.
+const defaultMaxPlayers = 32
+
 const (
 	// Default HTTP ports for CFX.re games
 	defaultPortFiveM = 30120
@@ -57,21 +60,28 @@ type PlayersResponse struct {
 	Ping        int      `json:"ping"`
 }
 
+// DynamicResponse represents the /dynamic.json endpoint response. This is the
+// canonical lightweight endpoint CFX.re servers use to advertise live player
+// counts, and is more reliable than deriving counts from /players.json (which
+// some servers truncate or hide).
+type DynamicResponse struct {
+	Clients      int    `json:"clients"`
+	GameType     string `json:"gametype"`
+	Hostname     string `json:"hostname"`
+	MapName      string `json:"mapname"`
+	SvMaxClients int    `json:"sv_maxclients"`
+}
+
 // Query queries a CFX.re server and returns the result
 func (p *Protocol) Query(ctx context.Context, addr string) (*protocol.QueryResult, error) {
-	// CFX.re servers expose HTTP endpoints
-	// Ensure we have http:// prefix
-	baseURL := addr
-	if !strings.HasPrefix(addr, "http://") && !strings.HasPrefix(addr, "https://") {
-		baseURL = "http://" + addr
-	}
+	// Normalize the address into an immutable endpoint value object that knows
+	// how to build the well-known CFX.re data endpoints.
+	endpoint := NewEndpoint(addr)
 
-	// Fetch /info.json
+	// Fetch /info.json (required) and measure network latency (ping).
 	pingStart := time.Now()
-	infoData, err := p.Transport.SendHTTP(ctx, baseURL+"/info.json")
-	pingDuration := time.Since(pingStart)
-	pingMs := int(pingDuration.Round(time.Millisecond).Milliseconds())
-
+	infoData, err := p.Transport.SendHTTP(ctx, endpoint.Info())
+	pingMs := int(time.Since(pingStart).Round(time.Millisecond).Milliseconds())
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch /info.json: %w", err)
 	}
@@ -81,8 +91,8 @@ func (p *Protocol) Query(ctx context.Context, addr string) (*protocol.QueryResul
 		return nil, fmt.Errorf("failed to parse info response: %w", err)
 	}
 
-	// Fetch /players.json
-	playersData, err := p.Transport.SendHTTP(ctx, baseURL+"/players.json")
+	// Fetch /players.json (required).
+	playersData, err := p.Transport.SendHTTP(ctx, endpoint.Players())
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch /players.json: %w", err)
 	}
@@ -92,22 +102,17 @@ func (p *Protocol) Query(ctx context.Context, addr string) (*protocol.QueryResul
 		return nil, fmt.Errorf("failed to parse players response: %w", err)
 	}
 
-	// Parse max players (default to 32 if not set or invalid)
-	maxPlayers := 32
-	if info.Vars.SvMaxClients != "" {
-		if val, err := strconv.Atoi(info.Vars.SvMaxClients); err == nil {
-			maxPlayers = val
-		}
-	}
+	// Fetch /dynamic.json (best-effort). It provides authoritative live counts;
+	// servers that don't expose it simply leave the derived values in place.
+	dynamic, hasDynamic := p.fetchDynamic(ctx, endpoint)
 
-	// Build result with ALL data in raw
 	result := &protocol.QueryResult{
 		Online:     true,
 		Name:       info.Vars.SvHostname,
 		Map:        info.Vars.MapName,
 		NumPlayers: len(players),
-		MaxPlayers: maxPlayers,
-		Players:    []protocol.Player{}, // Initialize as empty array, not nil
+		MaxPlayers: parseMaxClients(info.Vars.SvMaxClients),
+		Players:    toPlayers(players),
 		Version:    info.Server,
 		Ping:       pingMs,
 		Raw: map[string]interface{}{
@@ -116,17 +121,66 @@ func (p *Protocol) Query(ctx context.Context, addr string) (*protocol.QueryResul
 		},
 	}
 
-	// Convert players to protocol.Player format
-	if len(players) > 0 {
-		result.Players = make([]protocol.Player, len(players))
-		for i, p := range players {
-			result.Players[i] = protocol.Player{
-				Name: p.Name,
-			}
-		}
+	if hasDynamic {
+		p.applyDynamic(result, dynamic)
+		result.Raw.(map[string]interface{})["dynamic"] = dynamic
 	}
 
 	return result, nil
+}
+
+// fetchDynamic retrieves and parses /dynamic.json. Any transport or parse
+// failure is treated as "not available" so that servers without the endpoint
+// still return a valid result.
+func (p *Protocol) fetchDynamic(ctx context.Context, endpoint Endpoint) (DynamicResponse, bool) {
+	data, err := p.Transport.SendHTTP(ctx, endpoint.Dynamic())
+	if err != nil || len(data) == 0 {
+		return DynamicResponse{}, false
+	}
+
+	var dynamic DynamicResponse
+	if err := json.Unmarshal(data, &dynamic); err != nil {
+		return DynamicResponse{}, false
+	}
+	return dynamic, true
+}
+
+// applyDynamic enriches the result with authoritative values from /dynamic.json,
+// only overriding fields when the dynamic endpoint provides a better value.
+func (p *Protocol) applyDynamic(result *protocol.QueryResult, dynamic DynamicResponse) {
+	// Prefer the reported client count when it exceeds the (possibly hidden or
+	// truncated) /players.json length.
+	if dynamic.Clients > result.NumPlayers {
+		result.NumPlayers = dynamic.Clients
+	}
+	if dynamic.SvMaxClients > 0 {
+		result.MaxPlayers = dynamic.SvMaxClients
+	}
+	if result.Map == "" {
+		result.Map = dynamic.MapName
+	}
+}
+
+// parseMaxClients converts the string sv_maxclients var into an int, falling
+// back to defaultMaxPlayers when unset or invalid.
+func parseMaxClients(raw string) int {
+	if raw == "" {
+		return defaultMaxPlayers
+	}
+	if val, err := strconv.Atoi(raw); err == nil {
+		return val
+	}
+	return defaultMaxPlayers
+}
+
+// toPlayers maps the CFX.re player list onto the unified protocol.Player slice.
+// It always returns a non-nil slice to satisfy the QueryResult contract.
+func toPlayers(players []PlayersResponse) []protocol.Player {
+	result := make([]protocol.Player, len(players))
+	for i, p := range players {
+		result[i] = protocol.Player{Name: p.Name}
+	}
+	return result
 }
 
 // Name returns the protocol name

@@ -260,6 +260,94 @@ func TestIntegration_CounterStrike_WithChallenge(t *testing.T) {
 	// Internal challenge handling can be refactored freely!
 }
 
+func TestIntegration_Rust_FullFlow(t *testing.T) {
+	// Rust uses the Source Engine A2S protocol on its default query port 28015.
+	rustResponse := buildSourceEngineResponse(
+		"[EU] Main | Vanilla",
+		"Procedural Map",
+		"rust",
+		"2412.1.1",
+		180, // players
+		200, // max
+		0,   // bots
+	)
+
+	mockTransport := transport.NewMockTransport()
+	// Default Rust query port must be 28015 (not the generic 27015).
+	mockTransport.UDPResponses["127.0.0.1:28015"] = rustResponse
+
+	client := NewClientWithDefaults(WithTransport(mockTransport))
+
+	ctx := context.Background()
+	result, err := client.Query(ctx, ServerRust, "127.0.0.1", nil)
+
+	require.NoError(t, err, "Query should succeed")
+	require.NotNil(t, result, "Result should not be nil")
+
+	assert.True(t, result.Online, "Server should be online")
+	assert.Equal(t, "[EU] Main | Vanilla", result.Name)
+	assert.Equal(t, "rust", result.Type, "Type should be rust")
+	assert.Equal(t, "Procedural Map", result.Map)
+	assert.Equal(t, 180, result.NumPlayers)
+	assert.Equal(t, 200, result.MaxPlayers)
+	assert.Equal(t, "2412.1.1", result.Version)
+	assert.GreaterOrEqual(t, result.Ping, 0)
+
+	// Raw carries the full Source Engine payload.
+	sourceInfo, ok := result.Raw.(*source.SourceInfo)
+	require.True(t, ok, "Raw should be *source.SourceInfo for Rust")
+	assert.Equal(t, "rust", sourceInfo.Game)
+}
+
+func TestIntegration_FiveM_FullFlow(t *testing.T) {
+	// FiveM uses the CFX.re HTTP protocol on its default port 30120.
+	infoResponse := map[string]interface{}{
+		"server": "FXServer-master v1.0.0.7290",
+		"vars": map[string]interface{}{
+			"sv_hostname":    "Los Santos Roleplay",
+			"sv_maxclients":  "48",
+			"mapname":        "San Andreas",
+			"gamename":       "gta5",
+			"tags":           "roleplay,economy,serious",
+			"sv_projectName": "LSRP",
+		},
+		"resources": []string{"mapmanager", "chat", "spawnmanager"},
+	}
+	infoData, _ := json.Marshal(infoResponse)
+
+	players := []map[string]interface{}{
+		{"name": "Alice", "id": 1, "ping": 30},
+		{"name": "Bob", "id": 2, "ping": 45},
+	}
+	playersData, _ := json.Marshal(players)
+
+	mockTransport := transport.NewMockTransport()
+	mockTransport.HTTPResponses["http://127.0.0.1:30120/info.json"] = infoData
+	mockTransport.HTTPResponses["http://127.0.0.1:30120/players.json"] = playersData
+
+	client := NewClientWithDefaults(WithTransport(mockTransport))
+
+	ctx := context.Background()
+	result, err := client.Query(ctx, ServerFiveM, "127.0.0.1", nil)
+
+	require.NoError(t, err, "Query should succeed")
+	require.NotNil(t, result, "Result should not be nil")
+
+	assert.True(t, result.Online, "Server should be online")
+	assert.Equal(t, "Los Santos Roleplay", result.Name)
+	assert.Equal(t, "fivem", result.Type, "Type should be fivem")
+	assert.Equal(t, "San Andreas", result.Map)
+	assert.Equal(t, 2, result.NumPlayers, "Should reflect players.json length")
+	assert.Equal(t, 48, result.MaxPlayers)
+	assert.Equal(t, "FXServer-master v1.0.0.7290", result.Version)
+	require.Len(t, result.Players, 2)
+	assert.Equal(t, "Alice", result.Players[0].Name)
+	assert.GreaterOrEqual(t, result.Ping, 0)
+
+	// Raw carries the full CFX.re payload (info + players).
+	assert.NotNil(t, result.Raw, "Raw must not be nil")
+}
+
 func TestIntegration_CustomPort(t *testing.T) {
 	// Mock response
 	mockResponse := buildSourceEngineResponse(
