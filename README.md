@@ -6,19 +6,42 @@
 [![Go Reference](https://pkg.go.dev/badge/github.com/dudekm/queryx.svg)](https://pkg.go.dev/github.com/dudekm/queryx)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-Universal Go library for querying game servers (Minecraft, Counter-Strike, etc.).
+Universal Go library and CLI for querying game servers. One protocol-agnostic
+API — `client.Query(ctx, type, host, port)` — returns the same `QueryResult`
+for 52 games across 8 protocols (Minecraft, Source Engine, GameSpy, CFX.re,
+SA-MP, MTA, TeamSpeak, Hytale).
+
+## 📚 Table of Contents
+
+- [Supported Games](#-supported-games)
+- [Installation](#-installation)
+- [Quick Start (Library)](#-quick-start-library)
+- [Configuration](#-configuration)
+- [CLI Tool](#-cli-tool)
+- [Development](#-development)
+- [Docker](#-docker)
+- [Testing](#-testing)
+- [Project Structure](#-project-structure)
+- [Adding a New Game](#-adding-a-new-game)
+- [Examples](#-examples)
+- [Debugging](#-debugging)
+- [Roadmap](#-roadmap)
+- [License](#-license)
 
 ## 🎮 Supported Games
 
-QueryX supports 60+ games across 6 protocols. Highlights:
+QueryX supports **52 games** across **8 protocols**. Highlights:
 
 - ✅ **Minecraft Java Edition**
 - ✅ **Counter-Strike 2 / 1.6 / Source**
 - ✅ **Rust** (Source Engine A2S, default port `28015`)
 - ✅ **FiveM / RedM / Alt:V** (CFX.re HTTP)
 - ✅ **ARMA 2/3, DayZ** (GameSpy)
-- ✅ **SA-MP, Multi Theft Auto, TeamSpeak 3**
+- ✅ **SA-MP, Multi Theft Auto, TeamSpeak 3, Hytale**
 - ✅ …and 40+ more Source Engine titles (ARK, Squad, Valheim, 7 Days to Die, etc.)
+
+👉 **See [`GAMES.md`](GAMES.md) for the full table** — every game with its
+`type` key, protocol, default port, and implementation status.
 
 ## 📦 Installation
 
@@ -26,7 +49,7 @@ QueryX supports 60+ games across 6 protocols. Highlights:
 go get github.com/dudekm/queryx
 ```
 
-## 🚀 Quick Start - Library
+## 🚀 Quick Start (Library)
 
 ### Basic Usage
 
@@ -168,6 +191,34 @@ if len(diag.Resolution.SRVRecords) > 0 {
 - Protocol information (name, version)
 - Success status
 
+## 🧩 Configuration
+
+The client is configured with functional options passed to
+`NewClientWithDefaults(...)` (or `NewClient(...)`). All are optional; sensible
+defaults apply.
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `WithTimeout(d time.Duration)` | `5s` | Per-query timeout (also honored via `context`). |
+| `WithDebug(enabled bool)` | `false` | Enable verbose debug logging to stdout. |
+| `WithLogger(l Logger)` | no-op logger | Plug in a custom `Logger` implementation. |
+| `WithDNSCache(ttlSeconds int)` | disabled | Cache DNS lookups for the given TTL. |
+| `WithResolver(r resolver.Resolver)` | system resolver | Inject a custom DNS resolver (e.g. for tests). |
+| `WithTransport(t transport.Transport)` | UDP/TCP/HTTP | Inject a custom transport (e.g. a mock in tests). |
+
+```go
+client := queryx.NewClientWithDefaults(
+    queryx.WithTimeout(10*time.Second),
+    queryx.WithDNSCache(300),  // cache DNS for 5 minutes
+    queryx.WithDebug(true),
+)
+```
+
+Dependency injection (`WithTransport`, `WithResolver`) is what makes the library
+fully testable without touching the network — see [Testing](#-testing).
+
+For CLI configuration, see [CLI Flags](#cli-flags).
+
 ## 🖥️ CLI Tool
 
 ### Build
@@ -229,7 +280,10 @@ go build -o queryx ./cmd/queryx
 -version          Show version
 ```
 
-## 🔨 Building After Changes
+## 🔨 Development
+
+Prefer a fully containerized workflow? Skip straight to [Docker](#-docker) — no
+local Go toolchain required. Otherwise, with Go installed locally:
 
 ```bash
 # Install dependencies
@@ -470,7 +524,9 @@ queryx/
     └── protocol_comparison/  # Protocol comparison demo
 ```
 
-## 🔧 Adding New Protocol
+## 🔧 Adding a New Game
+
+> After implementing a game, remember to add a row to [`GAMES.md`](GAMES.md).
 
 1. **Create protocol package**
 ```bash
@@ -542,6 +598,9 @@ func TestProtocol_Query(t *testing.T) {
     assert.True(t, result.Online)
 }
 ```
+
+6. **Add an integration (E2E) test** in `integration_test.go` asserting the
+   public `QueryResult` contract, and **add a row to [`GAMES.md`](GAMES.md)**.
 
 ## 📝 Examples
 
