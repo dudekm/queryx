@@ -1,0 +1,28 @@
+# Version control
+.git
+.gitignore
+
+# Build artifacts / binaries
+/queryx
+queryx.exe
+*.exe
+*.test
+*.out
+coverage.*
+*.coverprofile
+profile.cov
+
+# Docker / CI metadata (not needed inside the build context)
+Dockerfile
+.dockerignore
+compose.yaml
+Makefile
+.github
+
+# Editor / OS
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db

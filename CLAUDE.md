@@ -4,9 +4,18 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-QueryX is a universal Go library for querying game servers. It provides a clean, protocol-agnostic API for querying servers across 60+ games using 6 different protocols (Minecraft, Source Engine, GameSpy, CFX.re, SA-MP, TeamSpeak, etc.).
+QueryX is a universal Go library for querying game servers. It provides a clean, protocol-agnostic API for querying servers across 57 games using 11 different protocols (Minecraft Java, Minecraft Bedrock/RakNet, Source Engine, GameSpy, CFX.re, SA-MP, MTA, TeamSpeak, Hytale, idTech3, Mumble).
 
 The library is designed with testability, extensibility, and maintainability in mind.
+
+The full, authoritative list of supported games (with `type` keys, protocols,
+default ports and implementation status) lives in [`GAMES.md`](GAMES.md). Update
+that file whenever a game is added or changes status.
+
+**Rule:** every table in `GAMES.md` MUST be kept **sorted alphabetically by game
+name** (case-insensitive). `GAMES.md` also carries a **Planned / Not Yet
+Implemented** table that acts as a roadmap signpost — keep it up to date (and
+alphabetical) too.
 
 ## Build & Test Commands
 
@@ -50,6 +59,36 @@ go tool cover -html=coverage.out
 go test -v -run TestProtocol_Query_Success
 go test -v -run TestIntegration_Minecraft_FullFlow
 ```
+
+### Docker (local dev/test without a host Go toolchain)
+
+A multi-stage `Dockerfile`, a `compose.yaml`, and a `Makefile` provide a
+containerized workflow. The compose services mount the source and cache the Go
+module/build caches in named volumes.
+
+```bash
+# Via Makefile (see `make help` for all targets)
+make docker-test         # full test suite in a container
+make docker-test-short   # unit tests only
+make docker-lint         # golangci-lint
+make docker-dev          # interactive shell
+make docker-build        # build runtime CLI image (queryx:local)
+make docker-run ARGS="-type rust -host rust.example.com"
+
+# Via docker compose directly
+docker compose run --rm test
+docker compose run --rm test-short
+docker compose run --rm lint
+docker compose build queryx
+docker compose run --rm queryx -type fivem -host fivem.example.com
+
+# Build/run the image by hand (override Go version if needed)
+docker build --build-arg GO_VERSION=1.27 -t queryx:local .
+docker run --rm queryx:local -version
+```
+
+The runtime image is a minimal Alpine layer with only the static binary and CA
+certificates, running as a non-root user.
 
 ## Architecture
 
@@ -271,18 +310,36 @@ Each protocol lives in `internal/protocol/<name>/`:
 
 ## Testing Strategy
 
-### Unit Tests vs Integration Tests
+Two complementary layers, both network-free (the transport is always mocked, so
+tests are fast and deterministic — no real servers are contacted):
 
-- **Unit Tests**: Test individual components in isolation with all dependencies mocked
-  - Mock transport, resolver, and protocols
-  - Fast, focused tests for each component
-  - Located in each package: `minecraft_test.go`, `source_test.go`, etc.
+### 1. Unit Tests — components in isolation
 
-- **Integration Tests**: Test entire flow from public API to result
-  - Only mock the network transport layer (with real server responses)
-  - Test public API contract: `Query(GameMinecraft, "server.com") → QueryResult`
-  - Located in `integration_test.go` at project root
-  - Allow refactoring internal implementations without breaking tests
+- Test individual components with all dependencies mocked (transport, resolver, protocols).
+- Fast, focused tests for each component.
+- Located in each package: `minecraft_test.go`, `source_test.go`, `cfxre_test.go`, etc.
+- Cover parsing edge cases, error paths, ports, and value objects.
+
+### 2. Integration / End-to-End Tests — the public contract
+
+These are **black-box E2E tests of the public API**: they pin the
+**input → output** contract so that *whatever changes inside* `internal/*`,
+the same input yields the same `QueryResult`.
+
+- **Input** is always the same shape: `client.Query(ctx, <ServerType>, host, port)`.
+- **Output** is always the same shape: a `QueryResult` with the standard fields.
+- Only the **network transport** is mocked, fed with realistic raw server bytes/JSON.
+- Everything else (resolver, factory, protocol, parser, API mapping) is the **real** code.
+- Located in `integration_test.go` at the project root.
+
+**Why this matters:** you can refactor or rewrite any protocol, the transport,
+the resolver, or the factory, and as long as the public contract holds, these
+tests stay green. `TestIntegration_APIContract` additionally asserts the exact
+field types of `QueryResult` so the universal API can never silently drift.
+
+Every new game MUST ship with both: unit tests for its protocol package and an
+`integration_test.go` E2E case (see `TestIntegration_Rust_FullFlow` and
+`TestIntegration_FiveM_FullFlow` for templates).
 
 ### Writing Tests
 
@@ -320,6 +377,8 @@ Follow this pattern (documented in README, but key points):
 4. Add `Server<Game>` constant in `types.go`
 5. Write unit tests with mock transport
 6. Add integration test in `integration_test.go`
+7. Move the game to the **Implemented** table in `GAMES.md` (keep every table
+   alphabetical by game name)
 
 **Important**: Study existing implementations (minecraft, source) for patterns on:
 - Binary packet parsing with `bytes.Buffer` and `encoding/binary`
@@ -482,6 +541,6 @@ This consistency is the **core value proposition** of QueryX. Protect it.
 
 ## Version & Dependencies
 
-- Go 1.25.7+ required
+- Go 1.27+ required
 - Only external dependency: `github.com/stretchr/testify` (for testing)
 - Standard library used for networking (`net`, `context`, `encoding/binary`)

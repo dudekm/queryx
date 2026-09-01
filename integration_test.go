@@ -260,6 +260,206 @@ func TestIntegration_CounterStrike_WithChallenge(t *testing.T) {
 	// Internal challenge handling can be refactored freely!
 }
 
+func TestIntegration_Rust_FullFlow(t *testing.T) {
+	// Rust uses the Source Engine A2S protocol on its default query port 28015.
+	rustResponse := buildSourceEngineResponse(
+		"[EU] Main | Vanilla",
+		"Procedural Map",
+		"rust",
+		"2412.1.1",
+		180, // players
+		200, // max
+		0,   // bots
+	)
+
+	mockTransport := transport.NewMockTransport()
+	// Default Rust query port must be 28015 (not the generic 27015).
+	mockTransport.UDPResponses["127.0.0.1:28015"] = rustResponse
+
+	client := NewClientWithDefaults(WithTransport(mockTransport))
+
+	ctx := context.Background()
+	result, err := client.Query(ctx, ServerRust, "127.0.0.1", nil)
+
+	require.NoError(t, err, "Query should succeed")
+	require.NotNil(t, result, "Result should not be nil")
+
+	assert.True(t, result.Online, "Server should be online")
+	assert.Equal(t, "[EU] Main | Vanilla", result.Name)
+	assert.Equal(t, "rust", result.Type, "Type should be rust")
+	assert.Equal(t, "Procedural Map", result.Map)
+	assert.Equal(t, 180, result.NumPlayers)
+	assert.Equal(t, 200, result.MaxPlayers)
+	assert.Equal(t, "2412.1.1", result.Version)
+	assert.GreaterOrEqual(t, result.Ping, 0)
+
+	// Raw carries the full Source Engine payload.
+	sourceInfo, ok := result.Raw.(*source.SourceInfo)
+	require.True(t, ok, "Raw should be *source.SourceInfo for Rust")
+	assert.Equal(t, "rust", sourceInfo.Game)
+}
+
+func TestIntegration_FiveM_FullFlow(t *testing.T) {
+	// FiveM uses the CFX.re HTTP protocol on its default port 30120.
+	infoResponse := map[string]interface{}{
+		"server": "FXServer-master v1.0.0.7290",
+		"vars": map[string]interface{}{
+			"sv_hostname":    "Los Santos Roleplay",
+			"sv_maxclients":  "48",
+			"mapname":        "San Andreas",
+			"gamename":       "gta5",
+			"tags":           "roleplay,economy,serious",
+			"sv_projectName": "LSRP",
+		},
+		"resources": []string{"mapmanager", "chat", "spawnmanager"},
+	}
+	infoData, _ := json.Marshal(infoResponse)
+
+	players := []map[string]interface{}{
+		{"name": "Alice", "id": 1, "ping": 30},
+		{"name": "Bob", "id": 2, "ping": 45},
+	}
+	playersData, _ := json.Marshal(players)
+
+	mockTransport := transport.NewMockTransport()
+	mockTransport.HTTPResponses["http://127.0.0.1:30120/info.json"] = infoData
+	mockTransport.HTTPResponses["http://127.0.0.1:30120/players.json"] = playersData
+
+	client := NewClientWithDefaults(WithTransport(mockTransport))
+
+	ctx := context.Background()
+	result, err := client.Query(ctx, ServerFiveM, "127.0.0.1", nil)
+
+	require.NoError(t, err, "Query should succeed")
+	require.NotNil(t, result, "Result should not be nil")
+
+	assert.True(t, result.Online, "Server should be online")
+	assert.Equal(t, "Los Santos Roleplay", result.Name)
+	assert.Equal(t, "fivem", result.Type, "Type should be fivem")
+	assert.Equal(t, "San Andreas", result.Map)
+	assert.Equal(t, 2, result.NumPlayers, "Should reflect players.json length")
+	assert.Equal(t, 48, result.MaxPlayers)
+	assert.Equal(t, "FXServer-master v1.0.0.7290", result.Version)
+	require.Len(t, result.Players, 2)
+	assert.Equal(t, "Alice", result.Players[0].Name)
+	assert.GreaterOrEqual(t, result.Ping, 0)
+
+	// Raw carries the full CFX.re payload (info + players).
+	assert.NotNil(t, result.Raw, "Raw must not be nil")
+}
+
+func TestIntegration_Mordhau_FullFlow(t *testing.T) {
+	// Mordhau speaks Source Engine A2S (reuses the source protocol).
+	resp := buildSourceEngineResponse("Mordhau EU #1", "moshpit", "Mordhau", "1.0", 48, 64, 0)
+
+	mockTransport := transport.NewMockTransport()
+	mockTransport.UDPResponses["127.0.0.1:27015"] = resp
+
+	client := NewClientWithDefaults(WithTransport(mockTransport))
+	result, err := client.Query(context.Background(), ServerMordhau, "127.0.0.1", nil)
+
+	require.NoError(t, err)
+	assert.True(t, result.Online)
+	assert.Equal(t, "Mordhau EU #1", result.Name)
+	assert.Equal(t, "mordhau", result.Type)
+	assert.Equal(t, 48, result.NumPlayers)
+	assert.Equal(t, 64, result.MaxPlayers)
+}
+
+func TestIntegration_ProjectZomboid_FullFlow(t *testing.T) {
+	// Project Zomboid answers Source Engine A2S on its Steam query port (16261).
+	resp := buildSourceEngineResponse("PZ Survival", "Muldraugh", "Project Zomboid", "41.78", 6, 16, 0)
+
+	mockTransport := transport.NewMockTransport()
+	mockTransport.UDPResponses["127.0.0.1:16261"] = resp
+
+	client := NewClientWithDefaults(WithTransport(mockTransport))
+	result, err := client.Query(context.Background(), ServerProjectZomboid, "127.0.0.1", nil)
+
+	require.NoError(t, err)
+	assert.True(t, result.Online)
+	assert.Equal(t, "PZ Survival", result.Name)
+	assert.Equal(t, "projectzomboid", result.Type)
+	assert.Equal(t, 6, result.NumPlayers)
+	assert.Equal(t, 16, result.MaxPlayers)
+}
+
+// buildBedrockPong builds a RakNet 0x1C unconnected pong wrapping a MOTD string.
+func buildBedrockPong(motd string) []byte {
+	magic := []byte{0x00, 0xFF, 0xFF, 0x00, 0xFE, 0xFE, 0xFE, 0xFE, 0xFD, 0xFD, 0xFD, 0xFD, 0x12, 0x34, 0x56, 0x78}
+	buf := &bytes.Buffer{}
+	buf.WriteByte(0x1C)
+	_ = binary.Write(buf, binary.BigEndian, uint64(1))
+	_ = binary.Write(buf, binary.BigEndian, uint64(2))
+	buf.Write(magic)
+	_ = binary.Write(buf, binary.BigEndian, uint16(len(motd)))
+	buf.WriteString(motd)
+	return buf.Bytes()
+}
+
+func TestIntegration_MinecraftBedrock_FullFlow(t *testing.T) {
+	motd := "MCPE;Bedrock Realm;390;1.20.10;7;20;42;World;Survival;1;19132;19133;"
+
+	mockTransport := transport.NewMockTransport()
+	mockTransport.UDPResponses["127.0.0.1:19132"] = buildBedrockPong(motd)
+
+	client := NewClientWithDefaults(WithTransport(mockTransport))
+	result, err := client.Query(context.Background(), ServerMinecraftBedrock, "127.0.0.1", nil)
+
+	require.NoError(t, err)
+	assert.True(t, result.Online)
+	assert.Contains(t, result.Name, "Bedrock Realm")
+	assert.Equal(t, "minecraftbedrock", result.Type)
+	assert.Equal(t, 7, result.NumPlayers)
+	assert.Equal(t, 20, result.MaxPlayers)
+	assert.Equal(t, "1.20.10", result.Version)
+}
+
+func TestIntegration_Quake3_FullFlow(t *testing.T) {
+	resp := append([]byte{0xFF, 0xFF, 0xFF, 0xFF}, []byte("statusResponse\n")...)
+	resp = append(resp, []byte(`\sv_hostname\Q3 Arena\mapname\q3dm17\sv_maxclients\32\version\Q3 1.32`+"\n")...)
+	resp = append(resp, []byte(`13 40 "Sarge"`+"\n")...)
+
+	mockTransport := transport.NewMockTransport()
+	mockTransport.UDPResponses["127.0.0.1:27960"] = resp
+
+	client := NewClientWithDefaults(WithTransport(mockTransport))
+	result, err := client.Query(context.Background(), ServerQuake3, "127.0.0.1", nil)
+
+	require.NoError(t, err)
+	assert.True(t, result.Online)
+	assert.Equal(t, "Q3 Arena", result.Name)
+	assert.Equal(t, "quake3", result.Type)
+	assert.Equal(t, "q3dm17", result.Map)
+	assert.Equal(t, 32, result.MaxPlayers)
+	assert.Equal(t, 1, result.NumPlayers)
+	require.Len(t, result.Players, 1)
+	assert.Equal(t, "Sarge", result.Players[0].Name)
+}
+
+func TestIntegration_Mumble_FullFlow(t *testing.T) {
+	// version 1.4.230 (0x000104E6), 12/100 users, 558000 bps
+	buf := &bytes.Buffer{}
+	_ = binary.Write(buf, binary.BigEndian, uint32(0x000104E6))
+	_ = binary.Write(buf, binary.BigEndian, uint64(0x0123456789ABCDEF))
+	_ = binary.Write(buf, binary.BigEndian, uint32(12))
+	_ = binary.Write(buf, binary.BigEndian, uint32(100))
+	_ = binary.Write(buf, binary.BigEndian, uint32(558000))
+
+	mockTransport := transport.NewMockTransport()
+	mockTransport.UDPResponses["127.0.0.1:64738"] = buf.Bytes()
+
+	client := NewClientWithDefaults(WithTransport(mockTransport))
+	result, err := client.Query(context.Background(), ServerMumble, "127.0.0.1", nil)
+
+	require.NoError(t, err)
+	assert.True(t, result.Online)
+	assert.Equal(t, "mumble", result.Type)
+	assert.Equal(t, 12, result.NumPlayers)
+	assert.Equal(t, 100, result.MaxPlayers)
+	assert.Equal(t, "1.4.230", result.Version)
+}
+
 func TestIntegration_CustomPort(t *testing.T) {
 	// Mock response
 	mockResponse := buildSourceEngineResponse(

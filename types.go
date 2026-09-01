@@ -63,6 +63,8 @@ const (
 	ServerSubsistence    ServerType = "subsistence"
 	ServerPixARK         ServerType = "pixark"
 	ServerValheim        ServerType = "valheim"
+	ServerMordhau        ServerType = "mordhau"
+	ServerProjectZomboid ServerType = "projectzomboid"
 
 	// GameSpy Protocol Games
 	ServerARMA2        ServerType = "arma2"
@@ -79,6 +81,15 @@ const (
 
 	// Multi Theft Auto (ASE Protocol)
 	ServerMTA ServerType = "mta"
+
+	// Minecraft Bedrock Edition (RakNet unconnected ping)
+	// Note: ServerMinecraftBedrock is declared above.
+
+	// Quake III / idTech3 (getstatus Protocol)
+	ServerQuake3 ServerType = "quake3"
+
+	// Mumble voice server (UDP ping)
+	ServerMumble ServerType = "mumble"
 )
 
 // Backward compatibility aliases

@@ -1,11 +1,14 @@
 package queryx
 
 import (
+	"github.com/dudekm/queryx/internal/protocol/bedrock"
 	"github.com/dudekm/queryx/internal/protocol/cfxre"
 	"github.com/dudekm/queryx/internal/protocol/gamespy"
 	"github.com/dudekm/queryx/internal/protocol/hytale"
 	"github.com/dudekm/queryx/internal/protocol/minecraft"
 	"github.com/dudekm/queryx/internal/protocol/mta"
+	"github.com/dudekm/queryx/internal/protocol/mumble"
+	"github.com/dudekm/queryx/internal/protocol/quake3"
 	"github.com/dudekm/queryx/internal/protocol/samp"
 	"github.com/dudekm/queryx/internal/protocol/source"
 	"github.com/dudekm/queryx/internal/protocol/teamspeak"
@@ -143,6 +146,12 @@ func (c *Client) RegisterDefaultProtocols() {
 	valheimProto := source.NewProtocol(c.transport, "Valheim")
 	c.factory.Register(string(ServerValheim), valheimProto)
 
+	mordhauProto := source.NewProtocol(c.transport, "Mordhau")
+	c.factory.Register(string(ServerMordhau), mordhauProto)
+
+	projectZomboidProto := source.NewProtocol(c.transport, "Project Zomboid")
+	c.factory.Register(string(ServerProjectZomboid), projectZomboidProto)
+
 	// Register GameSpy Protocol Games
 	arma2Proto := gamespy.NewProtocol(c.transport, "ARMA 2")
 	c.factory.Register(string(ServerARMA2), arma2Proto)
@@ -181,6 +190,18 @@ func (c *Client) RegisterDefaultProtocols() {
 	// Register TeamSpeak 3
 	teamspeakProto := teamspeak.NewProtocol(c.transport, "TeamSpeak 3")
 	c.factory.Register(string(ServerTeamSpeak), teamspeakProto)
+
+	// Register Minecraft Bedrock Edition (RakNet)
+	bedrockProto := bedrock.NewProtocol(c.transport, "Minecraft Bedrock")
+	c.factory.Register(string(ServerMinecraftBedrock), bedrockProto)
+
+	// Register Quake III / idTech3
+	quake3Proto := quake3.NewProtocol(c.transport, "Quake III")
+	c.factory.Register(string(ServerQuake3), quake3Proto)
+
+	// Register Mumble voice server
+	mumbleProto := mumble.NewProtocol(c.transport, "Mumble")
+	c.factory.Register(string(ServerMumble), mumbleProto)
 }
 
 // NewClientWithDefaults creates a new client with all default protocols registered

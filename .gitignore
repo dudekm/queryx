@@ -5,6 +5,9 @@
 *.so
 *.dylib
 
+# Compiled CLI binary (build artifact, produced by `go build -o queryx ./cmd/queryx`)
+/queryx
+
 # Test binary
 *.test
 

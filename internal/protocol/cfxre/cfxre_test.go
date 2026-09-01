@@ -274,6 +274,77 @@ func TestProtocol_AllGames(t *testing.T) {
 	}
 }
 
+func TestProtocol_Query_WithDynamic(t *testing.T) {
+	mockTransport := transport.NewMockTransport()
+
+	// /info.json reports a hidden player list and no map.
+	infoResponse := InfoResponse{Server: "v1.0.0"}
+	infoResponse.Vars.SvHostname = "RP Server"
+	infoResponse.Vars.SvMaxClients = "32"
+	infoData, _ := json.Marshal(infoResponse)
+	mockTransport.HTTPResponses["http://test:30120/info.json"] = infoData
+
+	// /players.json is empty (server hides the player list).
+	playersData, _ := json.Marshal([]PlayersResponse{})
+	mockTransport.HTTPResponses["http://test:30120/players.json"] = playersData
+
+	// /dynamic.json carries the authoritative live counts and map.
+	dynamicData, _ := json.Marshal(DynamicResponse{
+		Clients:      48,
+		GameType:     "Roleplay",
+		Hostname:     "RP Server",
+		MapName:      "Los Santos",
+		SvMaxClients: 64,
+	})
+	mockTransport.HTTPResponses["http://test:30120/dynamic.json"] = dynamicData
+
+	p := NewProtocol(mockTransport, "FiveM")
+	result, err := p.Query(context.Background(), "test:30120")
+
+	assert.NoError(t, err)
+	assert.NotNil(t, result)
+	// dynamic.json values take precedence over the hidden/empty players list.
+	assert.Equal(t, 48, result.NumPlayers, "should use dynamic clients count")
+	assert.Equal(t, 64, result.MaxPlayers, "should use dynamic sv_maxclients")
+	assert.Equal(t, "Los Santos", result.Map, "should fall back to dynamic mapname")
+
+	// Raw must expose the full dynamic payload for power users.
+	rawMap, ok := result.Raw.(map[string]interface{})
+	assert.True(t, ok)
+	dyn, ok := rawMap["dynamic"].(DynamicResponse)
+	assert.True(t, ok, "Raw should contain dynamic response")
+	assert.Equal(t, "Roleplay", dyn.GameType)
+}
+
+func TestProtocol_Query_DynamicDoesNotOverrideRicherData(t *testing.T) {
+	mockTransport := transport.NewMockTransport()
+
+	// /info.json already provides a map and max clients.
+	infoResponse := InfoResponse{Server: "v1.0.0"}
+	infoResponse.Vars.SvHostname = "Server"
+	infoResponse.Vars.SvMaxClients = "32"
+	infoResponse.Vars.MapName = "info_map"
+	infoData, _ := json.Marshal(infoResponse)
+	mockTransport.HTTPResponses["http://test:30120/info.json"] = infoData
+
+	// /players.json lists more players than dynamic.clients.
+	players := []PlayersResponse{{Name: "A"}, {Name: "B"}, {Name: "C"}}
+	playersData, _ := json.Marshal(players)
+	mockTransport.HTTPResponses["http://test:30120/players.json"] = playersData
+
+	// dynamic.clients is lower than the actual player list length.
+	dynamicData, _ := json.Marshal(DynamicResponse{Clients: 1, MapName: "dynamic_map"})
+	mockTransport.HTTPResponses["http://test:30120/dynamic.json"] = dynamicData
+
+	p := NewProtocol(mockTransport, "FiveM")
+	result, err := p.Query(context.Background(), "test:30120")
+
+	assert.NoError(t, err)
+	assert.Equal(t, 3, result.NumPlayers, "should keep the larger players.json count")
+	assert.Equal(t, "info_map", result.Map, "should keep the map from info.json")
+	assert.Equal(t, 32, result.MaxPlayers, "dynamic sv_maxclients=0 must not override")
+}
+
 func TestGetDefaultPort(t *testing.T) {
 	tests := []struct {
 		gameName     string

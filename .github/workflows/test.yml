@@ -1,19 +1,34 @@
 name: Test
 
 on:
-  push:
-    branches: [ main, v1 ]
+  # Run when a pull request targeting main is opened or updated.
   pull_request:
-    branches: [ main, v1 ]
+    branches: [ main ]
+  # Run on main only when something is merged (i.e. a push lands on main).
+  # No tag triggers here, so tagging a version never runs the test suite.
+  push:
+    branches: [ main ]
+
+# Avoid duplicate/overlapping runs: a push to a feature branch fires only the
+# pull_request event (push is scoped to main), and a merge to main fires only
+# the push event (the PR closes without a test-triggering pull_request type).
+# This also cancels superseded in-progress runs on the same ref.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   test:
     name: Test
     runs-on: ${{ matrix.os }}
     strategy:
+      # Report every job's real result instead of cancelling the matrix on the
+      # first failure.
+      fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-        go: ['1.21', '1.22', '1.23']
+        # Test on the latest Go across all three OSes. `stable` auto-tracks the
+        # newest released Go, so there are no version numbers to bump here.
+        os: [ubuntu-latest, macos-latest, windows-latest]
 
     steps:
     - name: Checkout code
@@ -22,7 +37,7 @@ jobs:
     - name: Set up Go
       uses: actions/setup-go@v5
       with:
-        go-version: ${{ matrix.go }}
+        go-version: 'stable'
         cache: true
 
     - name: Download dependencies
@@ -39,7 +54,7 @@ jobs:
       run: go test -v -race -coverprofile=coverage.txt -covermode=atomic ./...
 
     - name: Upload coverage to Codecov
-      if: matrix.os == 'ubuntu-latest' && matrix.go == '1.23'
+      if: matrix.os == 'ubuntu-latest'
       uses: codecov/codecov-action@v4
       with:
         file: ./coverage.txt
@@ -59,7 +74,7 @@ jobs:
     - name: Set up Go
       uses: actions/setup-go@v5
       with:
-        go-version: '1.23'
+        go-version: 'stable'
         cache: true
 
 #    - name: golangci-lint
@@ -82,7 +97,7 @@ jobs:
     - name: Set up Go
       uses: actions/setup-go@v5
       with:
-        go-version: '1.23'
+        go-version: 'stable'
         cache: true
 
     - name: Build CLI (Linux/macOS)
