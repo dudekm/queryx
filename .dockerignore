@@ -15,7 +15,7 @@ profile.cov
 # Docker / CI metadata (not needed inside the build context)
 Dockerfile
 .dockerignore
-docker-compose.yml
+compose.yaml
 Makefile
 .github
 

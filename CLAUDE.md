@@ -10,7 +10,12 @@ The library is designed with testability, extensibility, and maintainability in 
 
 The full, authoritative list of supported games (with `type` keys, protocols,
 default ports and implementation status) lives in [`GAMES.md`](GAMES.md). Update
-that table whenever a game is added or changes status.
+that file whenever a game is added or changes status.
+
+**Rule:** every table in `GAMES.md` MUST be kept **sorted alphabetically by game
+name** (case-insensitive). `GAMES.md` also carries a **Planned / Not Yet
+Implemented** table that acts as a roadmap signpost — keep it up to date (and
+alphabetical) too.
 
 ## Build & Test Commands
 
@@ -57,7 +62,7 @@ go test -v -run TestIntegration_Minecraft_FullFlow
 
 ### Docker (local dev/test without a host Go toolchain)
 
-A multi-stage `Dockerfile`, a `docker-compose.yml`, and a `Makefile` provide a
+A multi-stage `Dockerfile`, a `compose.yaml`, and a `Makefile` provide a
 containerized workflow. The compose services mount the source and cache the Go
 module/build caches in named volumes.
 
@@ -372,6 +377,8 @@ Follow this pattern (documented in README, but key points):
 4. Add `Server<Game>` constant in `types.go`
 5. Write unit tests with mock transport
 6. Add integration test in `integration_test.go`
+7. Move the game to the **Implemented** table in `GAMES.md` (keep every table
+   alphabetical by game name)
 
 **Important**: Study existing implementations (minecraft, source) for patterns on:
 - Binary packet parsing with `bytes.Buffer` and `encoding/binary`

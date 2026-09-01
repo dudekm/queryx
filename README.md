@@ -305,7 +305,7 @@ GOOS=linux go build -o queryx ./cmd/queryx
 ## 🐳 Docker
 
 You can develop, test, lint and run QueryX entirely in Docker — no local Go
-toolchain required. A multi-stage `Dockerfile`, a `docker-compose.yml` with
+toolchain required. A multi-stage `Dockerfile`, a `compose.yaml` with
 ready-made service definitions, and a `Makefile` with `docker-*` shortcuts are
 included.
 
@@ -517,7 +517,7 @@ queryx/
 │       ├── mta/              # Multi Theft Auto (ASE)
 │       └── teamspeak/        # TeamSpeak 3
 ├── Dockerfile                # Multi-stage build for the CLI image
-├── docker-compose.yml        # Dev/test/lint/run services
+├── compose.yaml        # Dev/test/lint/run services
 ├── Makefile                  # Local + Docker task shortcuts
 └── examples/
     ├── library/              # Library usage
