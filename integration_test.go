@@ -348,6 +348,118 @@ func TestIntegration_FiveM_FullFlow(t *testing.T) {
 	assert.NotNil(t, result.Raw, "Raw must not be nil")
 }
 
+func TestIntegration_Mordhau_FullFlow(t *testing.T) {
+	// Mordhau speaks Source Engine A2S (reuses the source protocol).
+	resp := buildSourceEngineResponse("Mordhau EU #1", "moshpit", "Mordhau", "1.0", 48, 64, 0)
+
+	mockTransport := transport.NewMockTransport()
+	mockTransport.UDPResponses["127.0.0.1:27015"] = resp
+
+	client := NewClientWithDefaults(WithTransport(mockTransport))
+	result, err := client.Query(context.Background(), ServerMordhau, "127.0.0.1", nil)
+
+	require.NoError(t, err)
+	assert.True(t, result.Online)
+	assert.Equal(t, "Mordhau EU #1", result.Name)
+	assert.Equal(t, "mordhau", result.Type)
+	assert.Equal(t, 48, result.NumPlayers)
+	assert.Equal(t, 64, result.MaxPlayers)
+}
+
+func TestIntegration_ProjectZomboid_FullFlow(t *testing.T) {
+	// Project Zomboid answers Source Engine A2S on its Steam query port (16261).
+	resp := buildSourceEngineResponse("PZ Survival", "Muldraugh", "Project Zomboid", "41.78", 6, 16, 0)
+
+	mockTransport := transport.NewMockTransport()
+	mockTransport.UDPResponses["127.0.0.1:16261"] = resp
+
+	client := NewClientWithDefaults(WithTransport(mockTransport))
+	result, err := client.Query(context.Background(), ServerProjectZomboid, "127.0.0.1", nil)
+
+	require.NoError(t, err)
+	assert.True(t, result.Online)
+	assert.Equal(t, "PZ Survival", result.Name)
+	assert.Equal(t, "projectzomboid", result.Type)
+	assert.Equal(t, 6, result.NumPlayers)
+	assert.Equal(t, 16, result.MaxPlayers)
+}
+
+// buildBedrockPong builds a RakNet 0x1C unconnected pong wrapping a MOTD string.
+func buildBedrockPong(motd string) []byte {
+	magic := []byte{0x00, 0xFF, 0xFF, 0x00, 0xFE, 0xFE, 0xFE, 0xFE, 0xFD, 0xFD, 0xFD, 0xFD, 0x12, 0x34, 0x56, 0x78}
+	buf := &bytes.Buffer{}
+	buf.WriteByte(0x1C)
+	_ = binary.Write(buf, binary.BigEndian, uint64(1))
+	_ = binary.Write(buf, binary.BigEndian, uint64(2))
+	buf.Write(magic)
+	_ = binary.Write(buf, binary.BigEndian, uint16(len(motd)))
+	buf.WriteString(motd)
+	return buf.Bytes()
+}
+
+func TestIntegration_MinecraftBedrock_FullFlow(t *testing.T) {
+	motd := "MCPE;Bedrock Realm;390;1.20.10;7;20;42;World;Survival;1;19132;19133;"
+
+	mockTransport := transport.NewMockTransport()
+	mockTransport.UDPResponses["127.0.0.1:19132"] = buildBedrockPong(motd)
+
+	client := NewClientWithDefaults(WithTransport(mockTransport))
+	result, err := client.Query(context.Background(), ServerMinecraftBedrock, "127.0.0.1", nil)
+
+	require.NoError(t, err)
+	assert.True(t, result.Online)
+	assert.Contains(t, result.Name, "Bedrock Realm")
+	assert.Equal(t, "minecraftbedrock", result.Type)
+	assert.Equal(t, 7, result.NumPlayers)
+	assert.Equal(t, 20, result.MaxPlayers)
+	assert.Equal(t, "1.20.10", result.Version)
+}
+
+func TestIntegration_Quake3_FullFlow(t *testing.T) {
+	resp := append([]byte{0xFF, 0xFF, 0xFF, 0xFF}, []byte("statusResponse\n")...)
+	resp = append(resp, []byte(`\sv_hostname\Q3 Arena\mapname\q3dm17\sv_maxclients\32\version\Q3 1.32`+"\n")...)
+	resp = append(resp, []byte(`13 40 "Sarge"`+"\n")...)
+
+	mockTransport := transport.NewMockTransport()
+	mockTransport.UDPResponses["127.0.0.1:27960"] = resp
+
+	client := NewClientWithDefaults(WithTransport(mockTransport))
+	result, err := client.Query(context.Background(), ServerQuake3, "127.0.0.1", nil)
+
+	require.NoError(t, err)
+	assert.True(t, result.Online)
+	assert.Equal(t, "Q3 Arena", result.Name)
+	assert.Equal(t, "quake3", result.Type)
+	assert.Equal(t, "q3dm17", result.Map)
+	assert.Equal(t, 32, result.MaxPlayers)
+	assert.Equal(t, 1, result.NumPlayers)
+	require.Len(t, result.Players, 1)
+	assert.Equal(t, "Sarge", result.Players[0].Name)
+}
+
+func TestIntegration_Mumble_FullFlow(t *testing.T) {
+	// version 1.4.230 (0x000104E6), 12/100 users, 558000 bps
+	buf := &bytes.Buffer{}
+	_ = binary.Write(buf, binary.BigEndian, uint32(0x000104E6))
+	_ = binary.Write(buf, binary.BigEndian, uint64(0x0123456789ABCDEF))
+	_ = binary.Write(buf, binary.BigEndian, uint32(12))
+	_ = binary.Write(buf, binary.BigEndian, uint32(100))
+	_ = binary.Write(buf, binary.BigEndian, uint32(558000))
+
+	mockTransport := transport.NewMockTransport()
+	mockTransport.UDPResponses["127.0.0.1:64738"] = buf.Bytes()
+
+	client := NewClientWithDefaults(WithTransport(mockTransport))
+	result, err := client.Query(context.Background(), ServerMumble, "127.0.0.1", nil)
+
+	require.NoError(t, err)
+	assert.True(t, result.Online)
+	assert.Equal(t, "mumble", result.Type)
+	assert.Equal(t, 12, result.NumPlayers)
+	assert.Equal(t, 100, result.MaxPlayers)
+	assert.Equal(t, "1.4.230", result.Version)
+}
+
 func TestIntegration_CustomPort(t *testing.T) {
 	// Mock response
 	mockResponse := buildSourceEngineResponse(

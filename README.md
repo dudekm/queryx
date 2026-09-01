@@ -8,8 +8,8 @@
 
 Universal Go library and CLI for querying game servers. One protocol-agnostic
 API — `client.Query(ctx, type, host, port)` — returns the same `QueryResult`
-for 52 games across 8 protocols (Minecraft, Source Engine, GameSpy, CFX.re,
-SA-MP, MTA, TeamSpeak, Hytale).
+for 57 games across 11 protocols (Minecraft Java, Minecraft Bedrock/RakNet,
+Source Engine, GameSpy, CFX.re, SA-MP, MTA, TeamSpeak, Hytale, idTech3, Mumble).
 
 ## 📚 Table of Contents
 
@@ -30,15 +30,16 @@ SA-MP, MTA, TeamSpeak, Hytale).
 
 ## 🎮 Supported Games
 
-QueryX supports **52 games** across **8 protocols**. Highlights:
+QueryX supports **57 games** across **11 protocols**. Highlights:
 
-- ✅ **Minecraft Java Edition**
+- ✅ **Minecraft** Java Edition & Bedrock Edition (RakNet)
 - ✅ **Counter-Strike 2 / 1.6 / Source**
 - ✅ **Rust** (Source Engine A2S, default port `28015`)
 - ✅ **FiveM / RedM / Alt:V** (CFX.re HTTP)
 - ✅ **ARMA 2/3, DayZ** (GameSpy)
+- ✅ **Quake III** & idTech3 games, **Mumble** voice servers
 - ✅ **SA-MP, Multi Theft Auto, TeamSpeak 3, Hytale**
-- ✅ …and 40+ more Source Engine titles (ARK, Squad, Valheim, 7 Days to Die, etc.)
+- ✅ …and 40+ more Source Engine titles (ARK, Squad, Valheim, Mordhau, Project Zomboid, etc.)
 
 👉 **See [`GAMES.md`](GAMES.md) for the full table** — every game with its
 `type` key, protocol, default port, and implementation status.

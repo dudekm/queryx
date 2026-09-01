@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-QueryX is a universal Go library for querying game servers. It provides a clean, protocol-agnostic API for querying servers across 52 games using 8 different protocols (Minecraft, Source Engine, GameSpy, CFX.re, SA-MP, MTA, TeamSpeak, Hytale).
+QueryX is a universal Go library for querying game servers. It provides a clean, protocol-agnostic API for querying servers across 57 games using 11 different protocols (Minecraft Java, Minecraft Bedrock/RakNet, Source Engine, GameSpy, CFX.re, SA-MP, MTA, TeamSpeak, Hytale, idTech3, Mumble).
 
 The library is designed with testability, extensibility, and maintainability in mind.
 

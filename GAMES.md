@@ -10,7 +10,7 @@ the CLI (`queryx -type <type>`).
 
 **Legend:** ✅ implemented & registered &nbsp;·&nbsp; ⬜ planned (not implemented yet)
 
-**Status:** 52 implemented · 14 planned.
+**Status:** 57 implemented · 11 protocols · 9 planned.
 
 > Ports are the default **query** ports used when no port is supplied; they live
 > in each protocol package under `internal/protocol/**`.
@@ -53,12 +53,17 @@ the CLI (`queryx -type <type>`).
 | Killing Floor 2 | `killingfloor2` | Source Engine (A2S) | 27015 |
 | Left 4 Dead | `l4d` | Source Engine (A2S) | 27015 |
 | Left 4 Dead 2 | `l4d2` | Source Engine (A2S) | 27015 |
+| Minecraft: Bedrock Edition | `minecraftbedrock` | Bedrock (RakNet unconnected ping) | 19132 |
 | Minecraft: Java Edition | `minecraft` | Minecraft (Server List Ping) | 25565 |
 | Miscreated | `miscreated` | Source Engine (A2S) | 27015 |
+| Mordhau | `mordhau` | Source Engine (A2S) | 27015 |
 | Multi Theft Auto | `mta` | ASE | 22003 |
+| Mumble | `mumble` | Mumble (UDP ping) | 64738 |
 | No One Survived | `noonesurvived` | Source Engine (A2S) | 27015 |
 | PixARK | `pixark` | Source Engine (A2S) | 27015 |
 | Post Scriptum | `postscriptum` | Source Engine (A2S) | 27015 |
+| Project Zomboid | `projectzomboid` | Source Engine (A2S) | 16261 |
+| Quake III / idTech3 | `quake3` | idTech3 (getstatus) | 27960 |
 | RedM | `redm` | CFX.re (HTTP) | 30120 |
 | Rising Storm 2: Vietnam | `risingstorm2` | Source Engine (A2S) | 27015 |
 | Rust | `rust` | Source Engine (A2S) | 28015 |
@@ -76,30 +81,26 @@ the CLI (`queryx -type <type>`).
 
 ## ⬜ Planned / Not Yet Implemented
 
-A roadmap signpost: games QueryX does not query yet, with the protocol we'd most
-likely implement. The `type` keys are proposals; ports are decided during
-implementation. Games marked *(reuses `source`)* mainly need a `register.go`
-entry since they speak the A2S protocol we already support.
+A roadmap signpost. These are **deliberately not implemented** because they do
+not fit QueryX's model of an *anonymous, documented, per-server* query (the
+Blocker column says why) — implementing them would mean shipping credential
+flows or unverified/guessed wire formats. They stay here as candidates; the
+blocker is what has to be resolved first.
 
-`minecraftbedrock` and `discord` already have `type` constants declared in
-`types.go` but no registered protocol.
+`discord` already has a `type` constant declared in `types.go` but no registered
+protocol.
 
-| Game | proposed `type` | Intended Protocol |
-|------|-----------------|-------------------|
-| BeamMP | `beammp` | HTTP (BeamMP master API) |
-| Discord | `discord` | Discord Widget API (HTTP) |
-| Factorio | `factorio` | Factorio matching-server (HTTP/UDP) |
-| Minecraft: Bedrock Edition | `minecraftbedrock` | RakNet unconnected ping (UDP) |
-| Minetest / Luanti | `minetest` | Minetest server query (UDP) |
-| Mordhau | `mordhau` | Source Engine A2S *(reuses `source`)* |
-| Mumble | `mumble` | Mumble UDP ping |
-| Palworld | `palworld` | REST API (HTTP) |
-| Project Zomboid | `projectzomboid` | Source Engine A2S *(reuses `source`)* |
-| Quake III / idTech3 | `quake3` | Quake3 `getstatus` (UDP) |
-| Satisfactory | `satisfactory` | Dedicated Server HTTPS API |
-| Teeworlds | `teeworlds` | Teeworlds server info (UDP) |
-| Terraria | `terraria` | TShock REST API (HTTP) |
-| Ventrilo | `ventrilo` | Ventrilo status (UDP) |
+| Game | proposed `type` | Intended Protocol | Blocker |
+|------|-----------------|-------------------|---------|
+| BeamMP | `beammp` | HTTP (BeamMP backend) | No per-server query — only a central master list |
+| Discord | `discord` | Discord Widget API (HTTP) | Keyed by guild ID, not host+port; needs a non-DNS query flow |
+| Factorio | `factorio` | Matching-server API (HTTP) | Requires a Factorio account token |
+| Minetest / Luanti | `minetest` | Minetest server query (UDP) | Needs a peer handshake; no simple documented request packet |
+| Palworld | `palworld` | REST API (HTTP) | Requires the admin password (REST/RCON) |
+| Satisfactory | `satisfactory` | Lightweight Query (UDP) | Handshake framing not verified against a real server |
+| Teeworlds | `teeworlds` | Teeworlds server info (UDP) | Token-based since 0.7; exact framing unverified |
+| Terraria | `terraria` | TShock REST API (HTTP) | No vanilla query; needs TShock plugin + token |
+| Ventrilo | `ventrilo` | Ventrilo status (UDP) | Proprietary, obfuscated protocol |
 
 ---
 
@@ -108,7 +109,8 @@ entry since they speak the A2S protocol we already support.
 See the **Adding a New Game Protocol** section in [`CLAUDE.md`](CLAUDE.md) and
 the **Adding a New Game** walkthrough in [`README.md`](README.md). In short:
 
-1. Implement the `Protocol` interface in `internal/protocol/<game>/`.
+1. Implement the `Protocol` interface in `internal/protocol/<game>/` (or reuse
+   an existing protocol package, e.g. `source` for A2S games).
 2. Register it in `register.go` → `RegisterDefaultProtocols()`.
 3. Add the `Server<Game>` constant in `types.go`.
 4. Add unit tests (mock transport) and an integration test.
