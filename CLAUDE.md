@@ -78,7 +78,7 @@ docker compose build queryx
 docker compose run --rm queryx -type fivem -host fivem.example.com
 
 # Build/run the image by hand (override Go version if needed)
-docker build --build-arg GO_VERSION=1.25 -t queryx:local .
+docker build --build-arg GO_VERSION=1.27 -t queryx:local .
 docker run --rm queryx:local -version
 ```
 
@@ -534,6 +534,6 @@ This consistency is the **core value proposition** of QueryX. Protect it.
 
 ## Version & Dependencies
 
-- Go 1.25.7+ required
+- Go 1.27+ required
 - Only external dependency: `github.com/stretchr/testify` (for testing)
 - Standard library used for networking (`net`, `context`, `encoding/binary`)

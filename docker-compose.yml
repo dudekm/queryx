@@ -12,7 +12,7 @@
 
 # Shared configuration for source-mounted Go tooling containers (DRY).
 x-go-dev: &go-dev
-  image: golang:1.24-alpine
+  image: golang:1.27-alpine
   working_dir: /src
   volumes:
     - .:/src

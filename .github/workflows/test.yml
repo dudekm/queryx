@@ -26,19 +26,9 @@ jobs:
       # first failure.
       fail-fast: false
       matrix:
-        # Go only supports the two most recent major releases, so we track them
-        # with the `stable`/`oldstable` keywords (auto-updating, no version
-        # numbers to bump). Full version coverage runs on Linux (fast, cheap);
-        # macOS and Windows get a smoke test on the latest stable Go only.
-        #
-        # NOTE: EOL Go (1.21/1.22) is intentionally dropped — its test binaries
-        # lack the LC_UUID load command and abort under the current macOS
-        # runner's dyld.
-        include:
-          - { os: ubuntu-latest, go: 'oldstable' }
-          - { os: ubuntu-latest, go: 'stable' }
-          - { os: macos-latest, go: 'stable' }
-          - { os: windows-latest, go: 'stable' }
+        # Test on the latest Go across all three OSes. `stable` auto-tracks the
+        # newest released Go, so there are no version numbers to bump here.
+        os: [ubuntu-latest, macos-latest, windows-latest]
 
     steps:
     - name: Checkout code
@@ -47,7 +37,7 @@ jobs:
     - name: Set up Go
       uses: actions/setup-go@v5
       with:
-        go-version: ${{ matrix.go }}
+        go-version: 'stable'
         cache: true
 
     - name: Download dependencies
@@ -64,7 +54,7 @@ jobs:
       run: go test -v -race -coverprofile=coverage.txt -covermode=atomic ./...
 
     - name: Upload coverage to Codecov
-      if: matrix.os == 'ubuntu-latest' && matrix.go == 'stable'
+      if: matrix.os == 'ubuntu-latest'
       uses: codecov/codecov-action@v4
       with:
         file: ./coverage.txt

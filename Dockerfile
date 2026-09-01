@@ -3,7 +3,7 @@
 # ---------------------------------------------------------------------------
 # Builder stage: compiles the statically-linked queryx CLI binary.
 # ---------------------------------------------------------------------------
-ARG GO_VERSION=1.24
+ARG GO_VERSION=1.27
 FROM golang:${GO_VERSION}-alpine AS builder
 
 # git is required by the Go toolchain for module operations.

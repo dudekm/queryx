@@ -343,7 +343,7 @@ docker compose run --rm queryx -type minecraft -host hypixel.net
 ### Building and running the image by hand
 
 ```bash
-# Build (override the Go version if needed with --build-arg GO_VERSION=1.25)
+# Build (override the Go version if needed with --build-arg GO_VERSION=1.27)
 docker build -t queryx:local .
 
 # The image's entrypoint is the queryx binary
@@ -655,4 +655,4 @@ MIT
 
 ---
 
-**Made with Go 1.23+**
+**Made with Go 1.27+**
