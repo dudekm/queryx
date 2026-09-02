@@ -40,8 +40,91 @@ func TestCleanMOTD_String(t *testing.T) {
 			expected: "Hello World",
 		},
 		{
+			// Regression: empty top-level "text" must not short-circuit before
+			// the real MOTD in "extra" is read.
+			name: "empty text with extra",
+			input: map[string]interface{}{
+				"text": "",
+				"extra": []interface{}{
+					map[string]interface{}{"text": "Hello "},
+					map[string]interface{}{"text": "World"},
+				},
+			},
+			expected: "Hello World",
+		},
+		{
+			name: "non-empty text combined with extra",
+			input: map[string]interface{}{
+				"text": "A ",
+				"extra": []interface{}{
+					map[string]interface{}{"text": "B "},
+					map[string]interface{}{"text": "C"},
+				},
+			},
+			expected: "A B C",
+		},
+		{
+			// Elements of "extra" can be bare strings, not only objects.
+			name: "extra with string elements",
+			input: map[string]interface{}{
+				"text":  "",
+				"extra": []interface{}{"Hello ", "World"},
+			},
+			expected: "Hello World",
+		},
+		{
+			// "extra" nests: a component in "extra" may carry its own "extra".
+			name: "nested extra",
+			input: map[string]interface{}{
+				"text": "",
+				"extra": []interface{}{
+					map[string]interface{}{
+						"text": "",
+						"extra": []interface{}{
+							map[string]interface{}{"text": "Hel"},
+							map[string]interface{}{"text": "lo"},
+						},
+					},
+					map[string]interface{}{"text": " World"},
+				},
+			},
+			expected: "Hello World",
+		},
+		{
+			// Shape observed in the wild (blokowo.pl): empty top "text",
+			// per-character coloured components in nested "extra", legacy "§"
+			// codes mixed in.
+			name: "real-world empty text, deep extra, legacy codes",
+			input: map[string]interface{}{
+				"text": "",
+				"extra": []interface{}{
+					map[string]interface{}{
+						"text": "",
+						"extra": []interface{}{
+							map[string]interface{}{"color": "yellow", "text": "B"},
+							map[string]interface{}{"color": "yellow", "text": "L"},
+							map[string]interface{}{"color": "yellow", "text": "O"},
+						},
+					},
+					map[string]interface{}{"color": "white", "text": " §7- Survival"},
+				},
+			},
+			expected: "BLO - Survival",
+		},
+		{
+			// An array MOTD with no wrapping object.
+			name:     "top-level array",
+			input:    []interface{}{map[string]interface{}{"text": "Foo "}, "Bar"},
+			expected: "Foo Bar",
+		},
+		{
 			name:     "unknown type",
 			input:    123,
+			expected: "Unknown",
+		},
+		{
+			name:     "nil description",
+			input:    nil,
 			expected: "Unknown",
 		},
 	}

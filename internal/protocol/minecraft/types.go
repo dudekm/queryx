@@ -25,30 +25,59 @@ type serverResponse struct {
 	Favicon     string      `json:"favicon"`
 }
 
-// cleanMOTD extracts plain text from MOTD (Message of the Day)
-// Minecraft MOTD can be a string or a complex JSON object with formatting
+// cleanMOTD extracts plain text from MOTD (Message of the Day).
+//
+// A Minecraft MOTD can be a plain string or a chat component. A chat component
+// is an object with an optional "text" string and an optional "extra" array of
+// further components, which nest arbitrarily; elements of "extra" may themselves
+// be plain strings. Real servers routinely put the whole MOTD inside "extra"
+// with an empty top-level "text" (e.g. {"text":"","extra":[...]}) and colour
+// each segment (even each character) with its own nested component. Extracting
+// the text therefore has to walk the whole tree, not just read a flat "text".
 func cleanMOTD(description interface{}) string {
-	switch v := description.(type) {
-	case string:
-		return stripColorCodes(v)
-	case map[string]interface{}:
-		if text, ok := v["text"].(string); ok {
-			return stripColorCodes(text)
-		}
-		// Handle "extra" array
-		if extra, ok := v["extra"].([]interface{}); ok {
-			var parts []string
-			for _, e := range extra {
-				if eMap, ok := e.(map[string]interface{}); ok {
-					if text, ok := eMap["text"].(string); ok {
-						parts = append(parts, text)
-					}
-				}
-			}
-			return stripColorCodes(strings.Join(parts, ""))
-		}
+	switch description.(type) {
+	case string, map[string]interface{}, []interface{}:
+		return stripColorCodes(componentText(description, 0))
+	default:
+		// nil, numbers, or any shape we do not recognise as a component.
+		return "Unknown"
 	}
-	return "Unknown"
+}
+
+// maxComponentDepth bounds the recursion over a chat component tree, guarding
+// against a pathologically deep (or hostile) payload.
+const maxComponentDepth = 64
+
+// componentText recursively concatenates the visible text of a chat component,
+// which may be a string, a component object ("text" plus a nested "extra"
+// array), or an array of components. Colour/formatting metadata carried on
+// sibling keys ("color", "bold", …) is intentionally ignored; only text is
+// collected. Legacy "§" colour codes are stripped by the caller.
+func componentText(v interface{}, depth int) string {
+	if depth > maxComponentDepth {
+		return ""
+	}
+	switch c := v.(type) {
+	case string:
+		return c
+	case []interface{}:
+		var b strings.Builder
+		for _, e := range c {
+			b.WriteString(componentText(e, depth+1))
+		}
+		return b.String()
+	case map[string]interface{}:
+		var b strings.Builder
+		if text, ok := c["text"].(string); ok {
+			b.WriteString(text)
+		}
+		if extra, ok := c["extra"]; ok {
+			b.WriteString(componentText(extra, depth+1))
+		}
+		return b.String()
+	default:
+		return ""
+	}
 }
 
 // stripColorCodes removes Minecraft color codes (§x)
